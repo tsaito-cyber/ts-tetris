@@ -1,6 +1,5 @@
 
-enum BlockState {
-    Wall = '*',
+enum PointState {
     FixedBlock = '0',
     Empty = '.',
     UnboundedBlock = '1',
@@ -16,30 +15,33 @@ enum BoardState {
 }
 
 const boardRaw = `
-*..........*
-*..........*
-*..........*
-*..........*
-*..........*
-*..........*
-*..........*
-*..........*
-*..........*
-*..........*
-*..........*
-*..........*
-*..........*
-*..........*
-*..........*
-*..........*
-*..........*
-*..........*
-*..........*
-*..........*
-************
+..........
+..........
+..........
+..........
+..........
+..........
+..........
+..........
+..........
+..........
+..........
+..........
+..........
+..........
+..........
+..........
+..........
+..........
+..........
+..........
 `.trim()
 
-type BlockStates = Array<Array<BlockState>>
+type Table = Array<Array<PointState>>
+interface Point {
+    x: number
+    y: number
+} 
 
 function* blockGen() {
     function randBlocks(): Board {
@@ -57,12 +59,24 @@ function* blockGen() {
 }
 
 class Board {
-    private board: BlockStates
-    constructor(str: string) {
-        this.board = str.split("\n").map(row => [...row].map(char => char as BlockState))
+    public readonly table: Table
+    constructor(table: Table) {
+        this.table = table
     }
-    get boardText() {
-        return this.board.map(row => row.map(r => r as string).join('')).join("\n")
+    get boardText(): string {
+        return this.table.map(row => row.map(r => r as string).join('')).join("\n")
+    }
+    isPuttable = (point: Point, other: Board): boolean => {
+        return true
+    }
+    merge = (other: Board, board: Board): Board | void => { // FIX me
+        
+    }
+    clone = (): Board => {
+        return new Board(this.table.map(block => Array.from(block)))
+    }
+    static fromString(str: string): Board {
+        return new Board(str.split("\n").map(row => [...row].map(char => char as PointState)))
     }
 }
 
@@ -72,9 +86,9 @@ const Blocks = [
     "...\n.X1\n11.", // Z_t
     ".1.\n.X.\n.11", // L
     ".1.\n.X.\n11.", // L_t
-].map(str => new Board(str))
+].map(Board.fromString)
 
-let board = new Board(boardRaw)
+let board = Board.fromString(boardRaw)
 let gen = blockGen();
 for (let i = 0; i < 3; i++) {
     let result = gen.next().value as Array<Board>
