@@ -15,26 +15,28 @@ enum BoardState {
 }
 
 const boardRaw = `
-..........
-..........
-..........
-..........
-..........
-..........
-..........
-..........
-..........
-..........
-..........
-..........
-..........
-..........
-..........
-..........
-..........
-..........
-..........
-..........
+**..........**
+**..........**
+**..........**
+**..........**
+**..........**
+**..........**
+**..........**
+**..........**
+**..........**
+**..........**
+**..........**
+**..........**
+**..........**
+**..........**
+**..........**
+**..........**
+**..........**
+**..........**
+**..........**
+**..........**
+**************
+**************
 `.trim()
 
 type Table = Array<Array<PointState>>
@@ -66,13 +68,32 @@ class Board {
     get boardText(): string {
         return this.table.map(row => row.map(r => r as string).join('')).join("\n")
     }
-    isPuttable = (point: Point, other: Board): boolean => {
+    isPuttable(point: Point, other: Board): boolean {
+        let iter = other.iterator()
+        let result = iter.next()
+        while(true) {
+            const {done: done, value: [y, x, value]} = iter.next()
+            if (done) { break }
+            const newY = y as number + point.y
+            const newX = x as number + point.x
+            if (newX >= this.table.length) { return false }
+            if (newY >= this.table[newX].length) { return false }
+            if (value === PointState.Empty || this.table[newX][newY] === PointState.Empty) { continue }
+            return false
+        }
         return true
     }
-    merge = (other: Board, board: Board): Board | void => { // FIX me
-        
+    *iterator() {
+        for (const [y, row] of this.table.entries()) {
+            for (const [x, value] of row.entries()) {
+                yield [y, x, value]
+            }
+        }
     }
-    clone = (): Board => {
+    // merge(point: Point, other: Board, pointState: PointState?): Board {
+    //     self.table
+    // }
+    clone(): Board {
         return new Board(this.table.map(block => Array.from(block)))
     }
     static fromString(str: string): Board {
