@@ -49,14 +49,8 @@ function* blockGen() {
     function randBlocks(): Board {
         return Blocks[Math.floor(Math.random() * Blocks.length)]
     }
-    let items = []
-    for (let i = 0; i < 3; i++) {
-        items.push(randBlocks())
-    }
     while(true) {
-        yield items
-        items.shift() // discard
-        items.push(randBlocks())
+        yield randBlocks()
     }
 }
 
@@ -121,8 +115,7 @@ const Blocks = [
 let board = Board.fromString(boardRaw)
 let gen = blockGen();
 for (let i = 0; i < 2; i++) {
-    let result = gen.next().value as Array<Board>
-    let b = result[0]
+    let b = gen.next().value as Board
     let point = {x: Math.floor(Math.random() * 6) + 1, y: Math.floor(Math.random() * 15)}
     if (!board.isPuttable(point, b)) { continue }
     board = board.merge(point, b, PointState.FixedBlock)
