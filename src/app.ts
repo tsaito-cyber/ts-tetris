@@ -63,14 +63,9 @@ class Board {
         return this.table.map(row => row.map(r => r as string).join('')).join("\n")
     }
     isPuttable(point: Point, other: Board): boolean {
-        let iter = other.iterator()
-        let result = iter.next()
-        while(true) {
-            const {done: done, value: result} = iter.next()
-            if (done) { break }
-            const [y, x, value] = result
-            const newY = y as number + point.y
-            const newX = x as number + point.x
+        for (const {y: y, x: x, value: value} of other.iterator()) {
+            const newY = y + point.y
+            const newX = x + point.x
             if (newY >= this.table.length) { return false }
             if (newX >= this.table[newY].length) { return false }
             if (value === PointState.Empty || this.table[newY][newX] === PointState.Empty) { continue }
@@ -81,21 +76,19 @@ class Board {
     *iterator() {
         for (const [y, row] of this.table.entries()) {
             for (const [x, value] of row.entries()) {
-                yield [y, x, value]
+                yield {y: y, x: x, value: value}
             }
         }
     }
     merge(point: Point, other: Board, pointState?: PointState): Board {
         if (!this.isPuttable(point, other)) { return this }
-        for (const [y, row] of this.table.entries()) {
-            for (const [x, value] of row.entries()) {
-                if (point.x <= x && point.y <= y &&
-                    other.table.length > (y - point.y) &&
-                    other.table[y - point.y].length > (x - point.x)) {
-                    let s =  other.table[y - point.y][x - point.x]
-                    this.table[y][x] = (pointState && (s !== PointState.Empty)) ? pointState : s
-                } else { this.table[y][x] = value }
-            }
+        for (const {y: y, x: x, value: value} of this.iterator()) {
+            if (point.x <= x && point.y <= y &&
+                other.table.length > (y - point.y) &&
+                other.table[y - point.y].length > (x - point.x)) {
+                let s =  other.table[y - point.y][x - point.x]
+                this.table[y][x] = (pointState && (s !== PointState.Empty)) ? pointState : s
+            } else { this.table[y][x] = value }
         }
         return this
     }    
