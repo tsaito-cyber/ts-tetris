@@ -108,15 +108,6 @@ class Board {
                 return value === PointState.Empty || (this.table[p.y][p.x] === PointState.Empty)
             })
     }
-    canMoveBottom(other: BoardLayer): boolean {
-        return this.canMove(other, (p) => ({y: p.y + 1, x: p.x} as Point))
-    }
-    canMoveLeft(other: BoardLayer): boolean {
-        return this.canMove(other, (p) => ({y: p.y, x: p.x - 1} as Point))
-    }
-    canMoveRight(other: BoardLayer): boolean {
-        return this.canMove(other, (p) => ({y: p.y - 1, x: p.x} as Point))
-    }
     getEliminatingRows(): Array<number> {
         return Array.from(this.table.entries()).map(([i, row]) => {
             return row.slice(2, NumberOfColumn + 2).every(r => r === PointState.FixedBlock) ? i : null
@@ -152,6 +143,11 @@ interface Point {
     x: number
     y: number
 }
+type Move = (p: Point) => Point
+const moveLeft   =  (p: Point) => ({x: p.x-1, y: p.y}   as Point)
+const moveRight  =  (p: Point) => ({x: p.x+1, y: p.y}   as Point)
+const moveBottom =  (p: Point) => ({x: p.x,   y: p.y+1} as Point)
+const moveNone   =  (p: Point) => p
 
 class BoardLayer extends Board {
     public readonly point: Point
@@ -207,6 +203,21 @@ enum BlockCommand {
     Right,
 }
 
+namespace BlockCommand {
+    export function toMove(cmd: BlockCommand): Move {
+        switch(cmd) {
+            case BlockCommand.Bottom:
+                return moveBottom
+            case BlockCommand.Right:
+                return moveRight
+            case BlockCommand.Left:
+                return moveLeft
+            case BlockCommand.Rotate:
+                return moveNone
+        }
+    }
+}
+
 class Game {
     private state: GameState
     private board: Board
@@ -237,28 +248,12 @@ class Game {
         }
     }
     moveBlock(cmd: BlockCommand) {
-        switch(cmd) {
-            case BlockCommand.Rotate: {
-                break
-            }
-            case BlockCommand.Bottom: {
-                if (this.board.canMoveBottom(this.block)) {
-                    this.block = this.block.movePoint(p => ({x: p.x, y: p.y+1} as Point))
-                }
-                break
-            }
-            case BlockCommand.Left: {
-                if (this.board.canMoveLeft(this.block)) {
-                    this.block = this.block.movePoint(p => ({x: p.x-1, y: p.y} as Point))
-                }
-                break
-            }
-            case BlockCommand.Right: {
-                if (this.board.canMoveRight(this.block)) {
-                    this.block = this.block.movePoint(p => ({x: p.x+1, y: p.y} as Point))
-                }
-                break
-            }
+        const move = BlockCommand.toMove(cmd)
+        if (cmd === BlockCommand.Rotate) {
+            return
+        }
+        if (this.board.canMove(this.block, move)) {
+            this.block = this.block.movePoint(move)
         }
     }
 }
@@ -268,7 +263,7 @@ const gen = blockGen();
 for (let i = 0; i < 10000; i++) {
     const b = gen.next().value as BoardLayer
     if (!board.isPuttable(b)) { continue }
-    console.log(`move ok: ${board.canMoveBottom(b)}`)
+    console.log(`move ok: ${board.canMove(b, moveBottom)}`)
     board.merge(b, PointState.FixedBlock)
     console.log(`[${i}] ~~~~~`)
     console.log(b.boardText)
