@@ -1,3 +1,4 @@
+const readline = require('readline');
 
 enum PointState {
     FixedBlock = '0',
@@ -30,16 +31,16 @@ const BlockStrings = [
 
 type Table = Array<Array<PointState>>
 
-function* blockGen(xRange: number = 10, yRange: number = 22) {
+function blockGen(xRange: number = 10, yRange: number = 22): () => Block {
     function randBlocks(): Block {
         const index = Math.floor(Math.random() * BlockStrings.length)
         const row = strToTable(BlockStrings[index])
         return new Block(row, genPoint(xRange, yRange))
     }
-    while(true) {
+    return () => {
         let block = randBlocks()
         for(let i = 0; i < Math.floor(Math.random() * 4); i++) { block = block.rotate3x3() }
-        yield block
+        return block
     }
 }
 
@@ -174,7 +175,6 @@ class Block extends Board {
     }
 }
 
-// FIX
 enum GameState {
     Moving,
     Creating,
@@ -204,20 +204,34 @@ namespace BlockCommand {
                 return moveNone
         }
     }
+    export function fromString(str: string): BlockCommand | void {
+        switch(str) {
+            case 'b':
+                return BlockCommand.Bottom
+            case 'r':
+                return BlockCommand.Right
+            case 'l':
+                return BlockCommand.Left
+            case 't':
+                return BlockCommand.Rotate
+            default:
+                return
+        }
+    }
 }
 
-class Game {
+class Tetris {
     private state: GameState
     private board: Board
     private block: Block
     private score: number
-    private blockGen: Iterator<Block>
-    constructor(block: Block) {
+    private blockGen: () => Block
+    constructor() {
         this.board = new Board(boardRaw)
         this.state = GameState.Creating
-        this.block = block
         this.score = 0
         this.blockGen = blockGen(10, 0)
+        this.block = this.blockGen()
     }
     next(cmd?: BlockCommand) {
         switch (this.state) {
@@ -247,7 +261,7 @@ class Game {
                 break
             }
             case GameState.Creating: {
-                this.block = blockGen().next().value as Block
+                this.block = this.blockGen()
                 this.state = this.board.isPuttable(this.block) ? GameState.Moving : GameState.Ending
                 break
             }
@@ -291,11 +305,28 @@ class Game {
     }
 }
 
+class CommandLine {
+    private tetris: Tetris
+    constructor() {
+        this.tetris = new Tetris()
+    }
+    run() {
+        const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout
+        })
+
+        rl.on('line', (input: string) => {
+            console.log(`Received: ${input}`);
+        })
+    }
+}
+
 function debug() {
     const board = new Board(boardRaw)
     const gen = blockGen();
     for (let i = 0; i < 30000; i++) {
-        const b = gen.next().value as Block
+        const b = gen()
         if (!board.isPuttable(b)) { continue }
         console.log(`move ok: ${board.canMove(b, moveBottom)}`)
         board.merge(b, PointState.FixedBlock)
@@ -310,5 +341,3 @@ function debug() {
     console.log(board.eliminatingRows())
     console.log(board.boardText)
 }
-
-
