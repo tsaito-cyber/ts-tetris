@@ -46,7 +46,7 @@ function blockGen(xRange: number = 9, yRange: number = 22): () => Block {
     }
 }
 
-function genPoint(xRange: number = 10, yRange: number = 22): Point {
+function genPoint(xRange: number = 9, yRange: number = 22): Point {
     return {x: Math.floor(Math.random() * xRange) + 2, y: Math.floor(Math.random() * yRange)} as Point
 }
 
@@ -236,7 +236,7 @@ class Tetris {
         this._board = new Board(boardRaw)
         this.state = GameState.Moving
         this.score = 0
-        this.blockGen = blockGen(10, 0)
+        this.blockGen = blockGen(9, 0)
         this.block = this.blockGen()
     }
     next(cmd?: BlockCommand) {
@@ -299,18 +299,24 @@ class Tetris {
         console.log(p)
         const v = block.center.x - p.x
         switch(v) {
-            case 0:
+            case 0: {
                 return
-            case 1:
+            }
+            case 1: {
                 if (this._board.canMove(block, moveLeft)) {
                     this.block = this.block.movePoint(moveLeft)
                 }
-            case -1:
+                break
+            }
+            case -1: {
                 if (this._board.canMove(block, moveRight)) {
                     this.block = this.block.movePoint(moveRight)
                 }
+                break
+            }
             default:
-                throw new Error('I seem not to be falling into this line...')
+                console.log(`${v}, ${block.center.x}, ${p.x}`)
+                throw new Error('I think falling into this line is impossible...')
         }
     }
 }
