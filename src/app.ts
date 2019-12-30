@@ -6,13 +6,7 @@ enum PointState {
     CentralUnboundedBlock = 'X'
 }
 
-enum BoardState {
-    Moving,
-    Creating,
-    Stopping,
-    Eliminating,
-    Ending,
-}
+const NumberOfColumn = 10
 
 const boardRaw = `
 **..........**
@@ -45,7 +39,7 @@ const boardRaw = `
 
 type Table = Array<Array<PointState>>
 
-function* blockGen(xRange: number = 10, yRange: number = 20) {
+function* blockGen(xRange: number = 10, yRange: number = 22) {
     function randBlocks(): BoardLayer {
         return BoardLayer.fromStringAndPoint(BlockStrings[Math.floor(Math.random() * BlockStrings.length)], genPoint(xRange, yRange))
     }
@@ -56,7 +50,7 @@ function* blockGen(xRange: number = 10, yRange: number = 20) {
     }
 }
 
-function genPoint(xRange: number = 10, yRange: number = 20): Point {
+function genPoint(xRange: number = 10, yRange: number = 22): Point {
     return {x: Math.floor(Math.random() * xRange) + 2, y: Math.floor(Math.random() * yRange)} as Point
 }
 
@@ -112,6 +106,32 @@ class Board {
             .every(({y: y, x: x, value: value}) =>
                    value === PointState.Empty || (this.table[y+1][x] === PointState.Empty))
     }
+    getEliminatingRows(): Array<number> {
+        return Array.from(this.table.entries()).map(([i, row]) => {
+            return row.slice(2, NumberOfColumn + 2).every(r => r === PointState.FixedBlock) ? i : null
+        }) as Array<number>
+    }
+    hasEliminatingRows(): boolean {
+        return this.getEliminatingRows().filter(v => v).length > 0
+    }
+    eliminatingRows() {
+        const rs = this.getEliminatingRows()
+        let items = []
+        let count = 0
+        for(let i = rs.length - 1; i >= 0; i--) {
+            for(var k = count; (i-k) >= 0 && (rs[i-k] != null); k++) {}
+            count = k
+            items[i] = [i, i - count] // maybe negative
+        }
+        items.reverse()
+        for (const [k, r] of items) {
+            if (r >= 0) {
+                this.table[k] = this.table[r]
+            } else {
+                this.table[k] = '**..........**'.split('').map(char => char as PointState) // SIZE
+            }
+        }
+    }
     static fromString(str: string): Board {
         return new this(strToTable(str))
     }
@@ -160,9 +180,43 @@ class BoardLayer extends Board {
     }
 }
 
+// FIX
+enum GameState {
+    Moving,
+    Creating,
+    Stopping,
+    Eliminating,
+    Ending,
+}
+
+enum Command {
+    Rotate,
+    Bottom,
+    Left,
+    Right,
+}
+
+class Game {
+    private state: GameState
+    private board: Board
+    constructor() {
+        this.board = Board.fromString(boardRaw)
+        this.state = GameState.Creating
+    }
+    next(command?: Command) {
+        switch (this.state) {
+            case GameState.Moving:
+            case GameState.Stopping:
+            case GameState.Eliminating:
+            case GameState.Ending:
+            case GameState.Creating:
+        }
+    }
+}
+
 const board = Board.fromString(boardRaw)
 const gen = blockGen();
-for (let i = 0; i < 20; i++) {
+for (let i = 0; i < 10000; i++) {
     const b = gen.next().value as BoardLayer
     if (!board.isPuttable(b)) { continue }
     console.log(`move ok: ${board.canMoveBottom(b)}`)
@@ -170,8 +224,11 @@ for (let i = 0; i < 20; i++) {
     console.log(`[${i}] ~~~~~`)
     console.log(b.boardText)
     console.log(`(x: ${b.point.x}, y: ${b.point.y})`)
+    console.log(`rows: ${board.getEliminatingRows()}`)
     console.log(`~~~~~~~~~`)
     console.log(board.boardText)
     console.log("")
 }
+console.log(board.eliminatingRows())
+console.log(board.boardText)
 
