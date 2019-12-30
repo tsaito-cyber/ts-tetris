@@ -76,11 +76,9 @@ class Board {
     }
     isPuttable(other: BoardLayer): boolean {
         for (const {y: y, x: x, value: value} of other.iterator()) {
-            const newY = y + other.point.y
-            const newX = x + other.point.x
-            if (newY >= this.table.length) { return false }
-            if (newX >= this.table[newY].length) { return false }
-            if (value === PointState.Empty || this.table[newY][newX] === PointState.Empty) { continue }
+            if (y >= this.table.length) { return false }
+            if (x >= this.table[y].length) { return false }
+            if (value === PointState.Empty || this.table[y][x] === PointState.Empty) { continue }
             return false
         }
         return true
@@ -95,17 +93,14 @@ class Board {
     merge(other: BoardLayer, pointState?: PointState): Board {
         if (!this.isPuttable(other)) { return this }
         let point = other.point
-        for (const {y: y, x: x, value: value} of this.iterator()) {
-            if (point.x <= x && point.y <= y &&
-                other.table.length > (y - point.y) &&
-                other.table[y - point.y].length > (x - point.x)) {
-                let s =  other.table[y - point.y][x - point.x]
-                this.table[y][x] = (pointState && (s !== PointState.Empty)) ? pointState : s
+        for (const {y: y, x: x, value: value} of other.iterator()) {
+            if (this.table.length > y && this.table[y].length > x) {
+                this.table[y][x] = (pointState && (value !== PointState.Empty)) ? pointState : value
             } else { this.table[y][x] = value }
         }
         return this
     }
-    canMoveBottom(): boolean {
+    canMoveBottom(other: BoardLayer): boolean {
         return true
     }
     static fromString(str: string): Board {
@@ -124,6 +119,11 @@ class BoardLayer extends Board {
         super(table)
         this.point = point
     }
+    *iterator() {
+        for(const {x: x, y: y, value: value} of super.iterator()) {
+            yield {y: this.point.y + y, x: this.point.x + x, value: value}
+        }
+    }
     static fromStringAndPoint(str: string, point: Point): BoardLayer {
         return new BoardLayer(strToTable(str), point)
     }
@@ -135,7 +135,6 @@ for (let i = 0; i < 2; i++) {
     let b = gen.next().value as BoardLayer
     if (!board.isPuttable(b)) { continue }
     board.merge(b, PointState.FixedBlock)
-    
     console.log(b.boardText)
     console.log("~~")
     console.log(board.boardText)
