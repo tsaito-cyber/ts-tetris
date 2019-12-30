@@ -67,15 +67,6 @@ class Board {
         }
         return
     }
-    isPuttable(other: Block): boolean {
-        for (const {point: {y: y, x: x}, value: value} of other.iterator()) {
-            if (y >= this.table.length) { return false }
-            if (x >= this.table[y].length) { return false }
-            if (value === PointState.Empty || this.table[y][x] === PointState.Empty) { continue }
-            return false
-        }
-        return true
-    }
     *iterator() {
         for (const [y, row] of this.table.entries()) {
             for (const [x, value] of row.entries()) {
@@ -94,8 +85,16 @@ class Board {
         }
         return new Board(table)
     }
+    isPuttable(other: Block): boolean {
+        for (const {point: {y: y, x: x}, value: value} of other.iterator()) {
+            if (y >= this.table.length) { return false }
+            if (x >= this.table[y].length) { return false }
+            if (value === PointState.Empty || this.table[y][x] === PointState.Empty) { continue }
+            return false
+        }
+        return true
+    }
     canMove(other: Block, move: Move): boolean {
-        if (!this.isPuttable(other)) { return false }
         return Array.from(other.iterator())
             .every(({point: point, value: value}) => {
                 const p = move(point as Point)
@@ -253,8 +252,6 @@ class Tetris {
     }
     next(cmd?: BlockCommand) {
         console.log(`cmd: ${cmd}`)
-        if (this.calling || this.gameOver) { return }
-        this.calling = true
         switch (this.state) {
             case GameState.Moving: {
                 this.moveBlock(cmd || BlockCommand.Down)
@@ -278,7 +275,6 @@ class Tetris {
                 break
             }
             case GameState.Ending: {
-                console.log(this.block)
                 console.log("Game Over")
                 break
             }
@@ -288,7 +284,6 @@ class Tetris {
                 break
             }
         }
-        this.calling = false
     }
     moveBlock(cmd: BlockCommand) {
         const move = BlockCommand.toMove(cmd)
@@ -317,14 +312,14 @@ class Tetris {
                 return
             }
             case 1: {
-                if (this._board.canMove(block, moveLeft)) {
-                    this.block = this.block.movePoint(moveLeft)
+                if (this._board.canMove(block, moveRight)) {
+                    this.block = block.movePoint(moveRight)
                 }
                 break
             }
             case -1: {
-                if (this._board.canMove(block, moveRight)) {
-                    this.block = this.block.movePoint(moveRight)
+                if (this._board.canMove(block, moveLeft)) {
+                    this.block = block.movePoint(moveLeft)
                 }
                 break
             }
