@@ -40,18 +40,30 @@ const boardRaw = `
 `.trim()
 
 type Table = Array<Array<PointState>>
-interface Point {
-    x: number
-    y: number
-} 
 
 function* blockGen() {
-    function randBlocks(): Board {
-        return Blocks[Math.floor(Math.random() * Blocks.length)]
+    function randBlocks(): BoardLayer {
+        return BoardLayer.fromStringAndPoint(BlockStrings[Math.floor(Math.random() * BlockStrings.length)], genPoint())
     }
     while(true) {
         yield randBlocks()
     }
+}
+
+function genPoint(midX: number = 5, midY: number = 15): Point {
+    return {x: Math.floor(Math.random() * midX) + 1, y: Math.floor(Math.random() * midY)} as Point
+}
+
+const BlockStrings = [
+    "...\n.X.\n111", // T
+    "...\n1X.\n.11", // Z
+    "...\n.X1\n11.", // Z_t
+    ".1.\n.X.\n.11", // L
+    ".1.\n.X.\n11.", // L_t
+]
+
+function strToTable(str: string): Table {
+    return str.split("\n").map(row => [...row].map(char => char as PointState))
 }
 
 class Board {
@@ -62,10 +74,10 @@ class Board {
     get boardText(): string {
         return this.table.map(row => row.map(r => r as string).join('')).join("\n")
     }
-    isPuttable(point: Point, other: Board): boolean {
+    isPuttable(other: BoardLayer): boolean {
         for (const {y: y, x: x, value: value} of other.iterator()) {
-            const newY = y + point.y
-            const newX = x + point.x
+            const newY = y + other.point.y
+            const newX = x + other.point.x
             if (newY >= this.table.length) { return false }
             if (newX >= this.table[newY].length) { return false }
             if (value === PointState.Empty || this.table[newY][newX] === PointState.Empty) { continue }
@@ -80,8 +92,9 @@ class Board {
             }
         }
     }
-    merge(point: Point, other: Board, pointState?: PointState): Board {
-        if (!this.isPuttable(point, other)) { return this }
+    merge(other: BoardLayer, pointState?: PointState): Board {
+        if (!this.isPuttable(other)) { return this }
+        let point = other.point
         for (const {y: y, x: x, value: value} of this.iterator()) {
             if (point.x <= x && point.y <= y &&
                 other.table.length > (y - point.y) &&
@@ -91,27 +104,37 @@ class Board {
             } else { this.table[y][x] = value }
         }
         return this
-    }    
+    }
+    canMoveBottom(): boolean {
+        return true
+    }
     static fromString(str: string): Board {
-        return new Board(str.split("\n").map(row => [...row].map(char => char as PointState)))
+        return new this(strToTable(str))
     }
 }
 
-const Blocks = [
-    "...\n.X.\n111", // T
-    "...\n1X.\n.11", // Z
-    "...\n.X1\n11.", // Z_t
-    ".1.\n.X.\n.11", // L
-    ".1.\n.X.\n11.", // L_t
-].map(Board.fromString)
+interface Point {
+    x: number
+    y: number
+}
+
+class BoardLayer extends Board {
+    public readonly point: Point
+    constructor(table: Table, point: Point) {
+        super(table)
+        this.point = point
+    }
+    static fromStringAndPoint(str: string, point: Point): BoardLayer {
+        return new BoardLayer(strToTable(str), point)
+    }
+}
 
 let board = Board.fromString(boardRaw)
 let gen = blockGen();
 for (let i = 0; i < 2; i++) {
-    let b = gen.next().value as Board
-    let point = {x: Math.floor(Math.random() * 6) + 1, y: Math.floor(Math.random() * 15)}
-    if (!board.isPuttable(point, b)) { continue }
-    board = board.merge(point, b, PointState.FixedBlock)
+    let b = gen.next().value as BoardLayer
+    if (!board.isPuttable(b)) { continue }
+    board.merge(b, PointState.FixedBlock)
     
     console.log(b.boardText)
     console.log("~~")
