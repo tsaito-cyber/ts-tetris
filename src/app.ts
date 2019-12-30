@@ -140,7 +140,7 @@ interface Point {
 type Move = (p: Point) => Point
 const moveLeft   =  (p: Point) => ({x: p.x-1, y: p.y}   as Point)
 const moveRight  =  (p: Point) => ({x: p.x+1, y: p.y}   as Point)
-const moveBottom =  (p: Point) => ({x: p.x,   y: p.y+1} as Point)
+const moveDown =  (p: Point) => ({x: p.x,   y: p.y+1} as Point)
 const moveNone   =  (p: Point) => p
 
 class Block extends Board {
@@ -189,7 +189,7 @@ enum GameState {
 
 enum BlockCommand {
     Rotate = 1,
-    Bottom = 2,
+    Down = 2,
     Left   = 3,
     Right  = 4,
 }
@@ -197,8 +197,8 @@ enum BlockCommand {
 namespace BlockCommand {
     export function toMove(cmd: BlockCommand): Move {
         switch(cmd) {
-            case BlockCommand.Bottom:
-                return moveBottom
+            case BlockCommand.Down:
+                return moveDown
             case BlockCommand.Right:
                 return moveRight
             case BlockCommand.Left:
@@ -209,13 +209,13 @@ namespace BlockCommand {
     }
     export function fromString(str: string): BlockCommand | void {
         switch(str) {
-            case 'b':
-                return BlockCommand.Bottom
-            case 'r':
+            case 'down':
+                return BlockCommand.Down
+            case 'right':
                 return BlockCommand.Right
-            case 'l':
+            case 'left':
                 return BlockCommand.Left
-            case 't':
+            case 'up':
                 return BlockCommand.Rotate
             default:
                 return
@@ -243,7 +243,7 @@ class Tetris {
         console.log(`cmd: ${cmd}`)
         switch (this.state) {
             case GameState.Moving: {
-                this.moveBlock(cmd || BlockCommand.Bottom)
+                this.moveBlock(cmd || BlockCommand.Down)
                 break
             }
             case GameState.Stopping: {
@@ -282,7 +282,7 @@ class Tetris {
         }
         if (this._board.canMove(this.block, move)) {
             this.block = this.block.movePoint(move)
-        } else if (cmd === BlockCommand.Bottom) {
+        } else if (cmd === BlockCommand.Down) {
             this._board = this._board.merge(this.block, PointState.FixedBlock)
             this.state = GameState.Stopping
             this.next()
@@ -323,24 +323,40 @@ class Tetris {
 
 class CommandLine {
     private tetris: Tetris
+    private clockdown: number
     private rl: any
     constructor() {
         this.tetris = new Tetris()
         this.rl = readline.createInterface({
             input: process.stdin,
-            output: process.stdout
+            output: process.stdout,
+            terminal: true,
         })
+        process.stdin.setRawMode(true)
+        this.clockdown = 1000
+        this.clock()
+    }
+    clock() {
+        setTimeout(() => {
+            this.tetris.next(BlockCommand.Down)
+            this.clock()
+            this.screen(`clockdown`)
+        }, this.clockdown)
     }
     run() {
         console.log(this.tetris.board.text)
-        out.write(' > ')
-        this.rl.on('line', (input: string) => {
-            console.log(`input: ${input}`)
-            const cmd = BlockCommand.fromString(input)
+        process.stdin.on('keypress', (c: string, key: any) => {
+            const cmd = BlockCommand.fromString(key.name as string)
             if (cmd != null) { this.tetris.next(cmd) }
-            console.log(this.tetris.board.text)
-            out.write(' > ')
+            this.screen(`input: ${key.name}`)
         })
+    }
+    screen(text: string) {
+        out.write("\u001B[2J\u001B[0;0f")
+        out.write("")
+        console.log(this.tetris.board.text)
+        console.log(text)
+        out.write(' > ')
     }
 }
 
@@ -350,7 +366,7 @@ function debug() {
     for (let i = 0; i < 30000; i++) {
         const b = gen()
         if (!board.isPuttable(b)) { continue }
-        console.log(`move ok: ${board.canMove(b, moveBottom)}`)
+        console.log(`move ok: ${board.canMove(b, moveDown)}`)
         board = board.merge(b, PointState.FixedBlock)
         console.log(`[${i}] ~~~~~`)
         console.log(b.text)
