@@ -11,7 +11,7 @@ enum PointState {
 function strToTable(str: string): Table {
     return str.split("\n").map(row => toPointStates(row))
 }
-
+9
 function toPointStates(str: string): Array<PointState> {
     return [...str].map(char => char as PointState)
 }
@@ -33,7 +33,7 @@ const BlockStrings = [
 
 type Table = Array<Array<PointState>>
 
-function blockGen(xRange: number = 9, yRange: number = 22): () => Block {
+function blockGen(xRange: number = 8, yRange: number = 22): () => Block {
     function randBlocks(): Block {
         const index = Math.floor(Math.random() * BlockStrings.length)
         const row = strToTable(BlockStrings[index])
@@ -46,7 +46,7 @@ function blockGen(xRange: number = 9, yRange: number = 22): () => Block {
     }
 }
 
-function genPoint(xRange: number = 9, yRange: number = 22): Point {
+function genPoint(xRange: number = 8, yRange: number = 22): Point {
     return {x: Math.floor(Math.random() * xRange) + 2, y: Math.floor(Math.random() * yRange)} as Point
 }
 
@@ -226,21 +226,31 @@ namespace BlockCommand {
 class Tetris {
     private state: GameState
     private _board: Board
-    private block: Block
-    private score: number
+    private _score: number
+    public block: Block
     private blockGen: () => Block
+    private calling: boolean
     get board() {
         return this._board.merge(this.block)
     }
+    get gameOver() {
+        return this.state == GameState.Ending
+    }
+    get score() {
+        return this._score
+    }
     constructor() {
         this._board = new Board(boardRaw)
+        this._score = 0
         this.state = GameState.Moving
-        this.score = 0
-        this.blockGen = blockGen(9, 0)
+        this.blockGen = blockGen(8, 0)
         this.block = this.blockGen()
+        this.calling = false
     }
     next(cmd?: BlockCommand) {
         console.log(`cmd: ${cmd}`)
+        if (this.calling || this.gameOver) { return }
+        this.calling = true
         switch (this.state) {
             case GameState.Moving: {
                 this.moveBlock(cmd || BlockCommand.Down)
@@ -250,7 +260,7 @@ class Tetris {
                 const score = this._board.countEliminatingRows()
                 if (score > 0) {
                     this.state = GameState.Eliminating
-                    this.score += score
+                    this._score += score
                 } else {
                     this.state = GameState.Creating
                 }
@@ -264,6 +274,7 @@ class Tetris {
                 break
             }
             case GameState.Ending: {
+                console.log(this.block)
                 console.log("Game Over")
                 break
             }
@@ -273,6 +284,7 @@ class Tetris {
                 break
             }
         }
+        this.calling = false
     }
     moveBlock(cmd: BlockCommand) {
         const move = BlockCommand.toMove(cmd)
@@ -291,12 +303,10 @@ class Tetris {
     rotateBlock() {
         let block = this.block.rotate3x3()
         let p = this._board.unPuttablePoint(block)
-        console.log(p)
         if (!p) {
             this.block = block
             return
         }
-        console.log(p)
         const v = block.center.x - p.x
         switch(v) {
             case 0: {
@@ -349,6 +359,13 @@ class CommandLine {
             const cmd = BlockCommand.fromString(key.name as string)
             if (cmd != null) { this.tetris.next(cmd) }
             this.screen(`input: ${key.name}`)
+            if (this.tetris.gameOver) {
+                let p = this.tetris.block.point
+                console.log(`your score: ${this.tetris.score}`)
+                console.log(`pos: (${p.x}, ${p.y})`)
+                console.log(`table: ${this.tetris.block.text}`)
+                process.exit(0)
+            }
         })
     }
     screen(text: string) {
