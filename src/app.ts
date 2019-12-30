@@ -33,7 +33,7 @@ const BlockStrings = [
 
 type Table = Array<Array<PointState>>
 
-function blockGen(xRange: number = 10, yRange: number = 22): () => Block {
+function blockGen(xRange: number = 9, yRange: number = 22): () => Block {
     function randBlocks(): Block {
         const index = Math.floor(Math.random() * BlockStrings.length)
         const row = strToTable(BlockStrings[index])
@@ -234,7 +234,7 @@ class Tetris {
     }
     constructor() {
         this._board = new Board(boardRaw)
-        this.state = GameState.Creating
+        this.state = GameState.Moving
         this.score = 0
         this.blockGen = blockGen(10, 0)
         this.block = this.blockGen()
@@ -285,6 +285,7 @@ class Tetris {
         } else if (cmd === BlockCommand.Bottom) {
             this._board = this._board.merge(this.block, PointState.FixedBlock)
             this.state = GameState.Stopping
+            this.next()
         }
     }
     rotateBlock() {
