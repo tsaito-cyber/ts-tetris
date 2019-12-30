@@ -6,42 +6,35 @@ enum PointState {
     CentralUnboundedBlock = 'X'
 }
 
-const NumberOfColumn = 10
+function strToTable(str: string): Table {
+    return str.split("\n").map(row => toPointStates(row))
+}
 
-const boardRaw = `
-**..........**
-**..........**
-**..........**
-**..........**
-**..........**
-**..........**
-**..........**
-**..........**
-**..........**
-**..........**
-**..........**
-**..........**
-**..........**
-**..........**
-**..........**
-**..........**
-**..........**
-**..........**
-**..........**
-**..........**
-**..........**
-**..........**
-**..........**
-**..........**
-**************
-**************
-`.trim()
+function toPointStates(str: string): Array<PointState> {
+    return [...str].map(char => char as PointState)
+}
+
+const NumberOfColumn = 10
+const PointStateRow = toPointStates('**..........**')
+
+const boardRaw = Array.from(new Array(24), () => [...PointStateRow]) as Table
+for (let i = 0; i < 2; i++) { boardRaw.push(toPointStates('**************')) }
+
+const BlockStrings = [
+    "...\n.X.\n111", // T
+    "...\n1X.\n.11", // Z
+    "...\n.X1\n11.", // Z_t
+    ".1.\n.X.\n.11", // L
+    ".1.\n.X.\n11.", // L_t
+]
 
 type Table = Array<Array<PointState>>
 
 function* blockGen(xRange: number = 10, yRange: number = 22) {
     function randBlocks(): BoardLayer {
-        return BoardLayer.fromStringAndPoint(BlockStrings[Math.floor(Math.random() * BlockStrings.length)], genPoint(xRange, yRange))
+        const index = Math.floor(Math.random() * BlockStrings.length)
+        const row = strToTable(BlockStrings[index])
+        return new BoardLayer(row, genPoint(xRange, yRange))
     }
     while(true) {
         const block = randBlocks()
@@ -52,18 +45,6 @@ function* blockGen(xRange: number = 10, yRange: number = 22) {
 
 function genPoint(xRange: number = 10, yRange: number = 22): Point {
     return {x: Math.floor(Math.random() * xRange) + 2, y: Math.floor(Math.random() * yRange)} as Point
-}
-
-const BlockStrings = [
-    "...\n.X.\n111", // T
-    "...\n1X.\n.11", // Z
-    "...\n.X1\n11.", // Z_t
-    ".1.\n.X.\n.11", // L
-    ".1.\n.X.\n11.", // L_t
-]
-
-function strToTable(str: string): Table {
-    return str.split("\n").map(row => [...row].map(char => char as PointState))
 }
 
 class Board {
@@ -130,12 +111,9 @@ class Board {
             if (r >= 0) {
                 this.table[k] = this.table[r]
             } else {
-                this.table[k] = '**..........**'.split('').map(char => char as PointState) // SIZE
+                this.table[k] = [...PointStateRow]
             }
         }
-    }
-    static fromString(str: string): Board {
-        return new this(strToTable(str))
     }
 }
 
@@ -182,9 +160,6 @@ class BoardLayer extends Board {
     movePoint(fn: (fn: Point) => Point): BoardLayer {
         return new BoardLayer(this.table, fn(this.point))
     }
-    static fromStringAndPoint(str: string, point: Point): BoardLayer {
-        return new BoardLayer(strToTable(str), point)
-    }
 }
 
 // FIX
@@ -225,7 +200,7 @@ class Game {
     private block: BoardLayer
     private score: number
     constructor(block: BoardLayer) {
-        this.board = Board.fromString(boardRaw)
+        this.board = new Board(boardRaw)
         this.state = GameState.Creating
         this.block = block
         this.score = 0
@@ -258,6 +233,7 @@ class Game {
                 break
             }
             case GameState.Creating: {
+                // TODO
                 break
             }
         }
@@ -280,9 +256,9 @@ class Game {
     }
 }
 
-const board = Board.fromString(boardRaw)
+const board = new Board(boardRaw)
 const gen = blockGen();
-for (let i = 0; i < 10000; i++) {
+for (let i = 0; i < 30000; i++) {
     const b = gen.next().value as BoardLayer
     if (!board.isPuttable(b)) { continue }
     console.log(`move ok: ${board.canMove(b, moveBottom)}`)
