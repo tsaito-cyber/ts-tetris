@@ -86,18 +86,18 @@ class Board {
         }
     }
     merge(point: Point, other: Board, pointState?: PointState): Board {
-        if (!this.isPuttable(point, other)) { throw new Error(`not puttable`) }
-        let table = Array.from(this.table.entries()).map(([y, row]) => {
-            return Array.from(row.entries()).map(([x, v]) => {
+        if (!this.isPuttable(point, other)) { return this }
+        for (const [y, row] of this.table.entries()) {
+            for (const [x, value] of row.entries()) {
                 if (point.x <= x && point.y <= y &&
                     other.table.length > (y - point.y) &&
                     other.table[y - point.y].length > (x - point.x)) {
                     let s =  other.table[y - point.y][x - point.x]
-                    return (pointState && (s !== PointState.Empty)) ? pointState : s
-                } else { return v }
-            })
-        })
-        return new Board(table)
+                    this.table[y][x] = (pointState && (s !== PointState.Empty)) ? pointState : s
+                } else { this.table[y][x] = value }
+            }
+        }
+        return this
     }    
     static fromString(str: string): Board {
         return new Board(str.split("\n").map(row => [...row].map(char => char as PointState)))
