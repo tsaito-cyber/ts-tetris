@@ -183,6 +183,9 @@ class BoardLayer extends Board {
         this.table[2][2] = a
         this.table[2][1] = b
     }
+    movePoint(fn: (fn: Point) => Point): BoardLayer {
+        return new BoardLayer(this.table, fn(this.point))
+    }
     static fromStringAndPoint(str: string, point: Point): BoardLayer {
         return new BoardLayer(strToTable(str), point)
     }
@@ -239,12 +242,21 @@ class Game {
                 break
             }
             case BlockCommand.Bottom: {
+                if (this.board.canMoveBottom(this.block)) {
+                    this.block = this.block.movePoint(p => ({x: p.x, y: p.y+1} as Point))
+                }
                 break
             }
             case BlockCommand.Left: {
+                if (this.board.canMoveLeft(this.block)) {
+                    this.block = this.block.movePoint(p => ({x: p.x-1, y: p.y} as Point))
+                }
                 break
             }
             case BlockCommand.Right: {
+                if (this.board.canMoveRight(this.block)) {
+                    this.block = this.block.movePoint(p => ({x: p.x+1, y: p.y} as Point))
+                }
                 break
             }
         }
