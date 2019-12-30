@@ -32,8 +32,8 @@ function create<T>(ctor: {new(...args: any[]): T}, args: any) {
 function blockGen(xRange: number = 8, yRange: number = 22): () => Block {
     function randBlocks(): Block {
         const block = Blocks[Math.floor(Math.random() * Blocks.length)]
-        let args = [getPoint(xRange, yRange)] as any[]
-        if (block.text) { args.push(strToTable(block.text)) }
+        let args = [strToTable(block.text), getPoint(xRange, yRange)] as any[]
+        if (block.rType) { args.push(block.rType) }
         return create(block.ctor, args)
     }
     return () => {
@@ -141,7 +141,7 @@ const moveNone   =  (p: Point) => p
 
 abstract class Block extends Board {
     public readonly point: Point
-    constructor(point: Point, table: Table) {
+    constructor(table: Table, point: Point) {
         super(table)
         this.point = point
     }
@@ -172,35 +172,61 @@ class Block3x3 extends Block {
         for (const {from: [x, y], to: [newX, newY]} of this.rotationMatrix) {
             table[newX][newY] = this.table[x][y]
         }
-        return new Block3x3(this.point, table)
+        return new Block3x3(table, this.point)
     }
     movePoint(fn: (fn: Point) => Point): Block {
-        return new Block3x3(fn(this.point), this.table)
+        return new Block3x3(this.table, fn(this.point))
     }
 }
 
 class Block2x2 extends Block {
-    constructor(point: Point) {
-        super(point, strToTable("11\n11"))
+    constructor(table: Table, point: Point) {
+        super(table, point)
     }
     rotate(): Block {
-        return new Block2x2(this.point)
+        return new Block2x2(this.table, this.point)
     }
     movePoint(fn: (fn: Point) => Point): Block {
-        return new Block2x2(fn(this.point))
+        return new Block2x2(this.table, fn(this.point))
     }
 }
 
+enum RotType {
+    Left  = ".1..\n.1..\n.1..\n.1..",
+    Top   = "....\n1111\n....\n....",
+    Right = "..1.\n..1.\n..1.\n..1.",
+    Down  = "....\n....\n1111\n....",
+}
+
 class Block4x4 extends Block {
-    constructor(point: Point) {
-        super(point, strToTable(".1..\n.1..\n.1..\n.1.."))
+    private rType: RotType
+    constructor(table: Table, point: Point, rType: RotType) {
+        super(strToTable(RotType.Left as string), point)
+        this.rType = rType
     }
     rotate(): Block {
         let table = this.tableClone()
-        return new Block4x4(this.point)
+        let nextType: RotType
+        switch (this.rType) {
+            case RotType.Left: {
+                nextType = RotType.Top
+                break
+            }
+            case RotType.Top: {
+                nextType = RotType.Right
+                break
+            }
+            case RotType.Right: {
+                nextType = RotType.Down
+            }
+            case RotType.Down: {
+                nextType = RotType.Left
+            }
+        }
+        return new Block4x4(strToTable(nextType as string), this.point, nextType)
     }
     movePoint(fn: (fn: Point) => Point): Block {
-        return new Block4x4(fn(this.point))
+        return new Block4x4(this.table, fn(this.point), this.rType)
     }
 }
 
@@ -210,8 +236,8 @@ const Blocks = [
     {ctor: Block3x3, text: "...\n.X1\n11."},  // Z_t
     {ctor: Block3x3, text: ".1.\n.X.\n.11"},  // L
     {ctor: Block3x3, text: ".1.\n.X.\n11."},  // L_t
-    {ctor: Block2x2, text: null},             // O
-    {ctor: Block4x4, text: null},             // I
+    {ctor: Block2x2, text: "11\n11"},             // O
+    {ctor: Block4x4, text: RotType.Left as string, rType: RotType.Left},             // I
 ]
 
 enum GameState {
@@ -451,7 +477,5 @@ function debug() {
     console.log(board.eliminatingRows())
     console.log(board.text)
 }
-
-
 
 (new GameCommandLine()).run()
