@@ -100,11 +100,11 @@ class Board {
         }
         return this
     }
-    canMove(other: BoardLayer, fn: (fn: Point) => Point): boolean {
+    canMove(other: BoardLayer, move: Move): boolean {
         if (!this.isPuttable(other)) { return false }
         return Array.from(other.iterator())
             .every(({point: point, value: value}) => {
-                const p = fn(point as Point)
+                const p = move(point as Point)
                 return value === PointState.Empty || (this.table[p.y][p.x] === PointState.Empty)
             })
     }
