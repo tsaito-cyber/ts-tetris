@@ -234,9 +234,18 @@ class Game {
                 break
             }
             case GameState.BlockStopping: {
+                if (this.board.hasEliminatingRows()) {
+                    this.state = GameState.Eliminating
+                } else {
+                    this.state = GameState.Creating
+                }
+                this.next()
                 break
             }
             case GameState.Eliminating: {
+                this.board.eliminatingRows()
+                this.state = GameState.Creating
+                this.next()
                 break
             }
             case GameState.Ending: {
@@ -250,11 +259,18 @@ class Game {
     moveBlock(cmd: BlockCommand) {
         const move = BlockCommand.toMove(cmd)
         if (cmd === BlockCommand.Rotate) {
+            this.rotateBlock()
             return
         }
         if (this.board.canMove(this.block, move)) {
             this.block = this.block.movePoint(move)
+        } else if (cmd === BlockCommand.Bottom) {
+            this.board.merge(this.block, PointState.FixedBlock)
+            this.state = GameState.BlockStopping
         }
+    }
+    rotateBlock() {
+        // TODO
     }
 }
 
