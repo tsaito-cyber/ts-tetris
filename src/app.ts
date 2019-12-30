@@ -35,15 +35,19 @@ const boardRaw = `
 **..........**
 **..........**
 **..........**
+**..........**
+**..........**
+**..........**
+**..........**
 **************
 **************
 `.trim()
 
 type Table = Array<Array<PointState>>
 
-function* blockGen() {
+function* blockGen(xRange: number = 10, yRange: number = 20) {
     function randBlocks(): BoardLayer {
-        return BoardLayer.fromStringAndPoint(BlockStrings[Math.floor(Math.random() * BlockStrings.length)], genPoint())
+        return BoardLayer.fromStringAndPoint(BlockStrings[Math.floor(Math.random() * BlockStrings.length)], genPoint(xRange, yRange))
     }
     while(true) {
         const block = randBlocks()
@@ -52,8 +56,8 @@ function* blockGen() {
     }
 }
 
-function genPoint(midX: number = 5, midY: number = 15): Point {
-    return {x: Math.floor(Math.random() * midX) + 1, y: Math.floor(Math.random() * midY)} as Point
+function genPoint(xRange: number = 10, yRange: number = 20): Point {
+    return {x: Math.floor(Math.random() * xRange) + 2, y: Math.floor(Math.random() * yRange)} as Point
 }
 
 const BlockStrings = [
