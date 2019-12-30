@@ -23,30 +23,25 @@ const PointStateRow = toPointStates('**..........**')
 const boardRaw = Array.from(new Array(NumberOfRow), () => [...PointStateRow]) as Table
 for (let i = 0; i < 2; i++) { boardRaw.push(toPointStates('**************')) }
 
-const BlockStrings = [
-    ".1.\n1X1\n...", // T
-    "...\n1X.\n.11", // Z
-    "...\n.X1\n11.", // Z_t
-    ".1.\n.X.\n.11", // L
-    ".1.\n.X.\n11.", // L_t
-]
-
 type Table = Array<Array<PointState>>
+
+function create<T>(ctor: {new(...args: any[]): T}, args: any) {
+    return new ctor(...args);
+}
 
 function blockGen(xRange: number = 8, yRange: number = 22): () => Block {
     function randBlocks(): Block {
-        const index = Math.floor(Math.random() * BlockStrings.length)
-        const row = strToTable(BlockStrings[index])
-        return new Block(row, genPoint(xRange, yRange))
+        const block = Blocks[Math.floor(Math.random() * Blocks.length)]
+        return create(block.ctor, [strToTable(block.text), getPoint(xRange, yRange)])
     }
     return () => {
         let block = randBlocks()
-        for(let i = 0; i < Math.floor(Math.random() * 4); i++) { block = block.rotate3x3() }
+        for(let i = 0; i < Math.floor(Math.random() * 4); i++) { block = block.rotate() }
         return block
     }
 }
 
-function genPoint(xRange: number = 8, yRange: number = 22): Point {
+function getPoint(xRange: number = 8, yRange: number = 22): Point {
     return {x: Math.floor(Math.random() * xRange) + 2, y: Math.floor(Math.random() * yRange)} as Point
 }
 
@@ -139,20 +134,11 @@ interface Point {
 type Move = (p: Point) => Point
 const moveLeft   =  (p: Point) => ({x: p.x-1, y: p.y}   as Point)
 const moveRight  =  (p: Point) => ({x: p.x+1, y: p.y}   as Point)
-const moveDown =  (p: Point) => ({x: p.x,   y: p.y+1} as Point)
+const moveDown   =  (p: Point) => ({x: p.x,   y: p.y+1} as Point)
 const moveNone   =  (p: Point) => p
 
-class Block extends Board {
+abstract class Block extends Board {
     public readonly point: Point
-    private readonly rotationMatrix =
-        [{from: [0, 0], to: [0, 2]},
-         {from: [2, 0], to: [0, 0]},
-         {from: [2, 2], to: [2, 0]},
-         {from: [0, 2], to: [2, 2]}, // [2, 2]
-         {from: [0, 1], to: [1, 2]},
-         {from: [1, 0], to: [0, 1]},
-         {from: [2, 1], to: [1, 0]},
-         {from: [1, 2], to: [2, 1]}] // [2, 1]
     constructor(table: Table, point: Point) {
         super(table)
         this.point = point
@@ -165,17 +151,59 @@ class Block extends Board {
             yield {point: {y: this.point.y + y, x: this.point.x + x}, value: value}
         }
     }
-    rotate3x3(): Block {
+    abstract rotate(): Block
+    abstract movePoint(fn: (fn: Point) => Point): Block
+}
+
+class Block3x3 extends Block {
+    private readonly rotationMatrix =
+        [{from: [0, 0], to: [0, 2]},
+         {from: [2, 0], to: [0, 0]},
+         {from: [2, 2], to: [2, 0]},
+         {from: [0, 2], to: [2, 2]},
+         {from: [0, 1], to: [1, 2]},
+         {from: [1, 0], to: [0, 1]},
+         {from: [2, 1], to: [1, 0]},
+         {from: [1, 2], to: [2, 1]}]
+    rotate(): Block {
         let table = this.tableClone()
         for (const {from: [x, y], to: [newX, newY]} of this.rotationMatrix) {
             table[newX][newY] = this.table[x][y]
         }
-        return new Block(table, this.point)
+        return new Block3x3(table, this.point)
     }
     movePoint(fn: (fn: Point) => Point): Block {
-        return new Block(this.table, fn(this.point))
+        return new Block3x3(this.table, fn(this.point))
     }
 }
+
+class Block2x2 extends Block {
+    rotate(): Block {
+        return new Block2x2(this.tableClone(), this.point)
+    }
+    movePoint(fn: (fn: Point) => Point): Block {
+        return new Block2x2(this.table, fn(this.point))
+    }
+}
+
+class Block4x4 extends Block {
+    rotate(): Block {
+        return new Block4x4(this.tableClone(), this.point)
+    }
+    movePoint(fn: (fn: Point) => Point): Block {
+        return new Block4x4(this.table, fn(this.point))
+    }
+}
+
+const Blocks = [
+    {ctor: Block3x3, text: ".1.\n1X1\n..."},          // T
+    {ctor: Block3x3, text: "...\n1X.\n.11"},          // Z
+    {ctor: Block3x3, text: "...\n.X1\n11."},          // Z_t
+    {ctor: Block3x3, text: ".1.\n.X.\n.11"},          // L
+    {ctor: Block3x3, text: ".1.\n.X.\n11."},          // L_t
+    {ctor: Block2x2, text: "11\n11"},                 // O
+    {ctor: Block4x4, text: ".1..\n.X..\n.1..\n.1.."}, // I
+]
 
 enum GameState {
     Moving      = 1,
@@ -188,7 +216,7 @@ enum GameState {
 
 enum BlockCommand {
     Rotate = 1,
-    Down = 2,
+    Down   = 2,
     Left   = 3,
     Right  = 4,
 }
@@ -300,7 +328,7 @@ class Tetris {
         }
     }
     rotateBlock() {
-        let block = this.block.rotate3x3()
+        let block = this.block.rotate()
         let p = this._board.unPuttablePoint(block)
         if (!p) {
             this.block = block
@@ -330,7 +358,7 @@ class Tetris {
     }
 }
 
-class CommandLine {
+class GameCommandLine {
     private tetris: Tetris
     private clockdown: number
     private rl: any
@@ -415,4 +443,6 @@ function debug() {
     console.log(board.text)
 }
 
-(new CommandLine()).run()
+
+
+(new GameCommandLine()).run()
