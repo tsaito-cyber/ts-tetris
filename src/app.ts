@@ -31,10 +31,10 @@ const BlockStrings = [
 type Table = Array<Array<PointState>>
 
 function* blockGen(xRange: number = 10, yRange: number = 22) {
-    function randBlocks(): BoardLayer {
+    function randBlocks(): Block {
         const index = Math.floor(Math.random() * BlockStrings.length)
         const row = strToTable(BlockStrings[index])
-        return new BoardLayer(row, genPoint(xRange, yRange))
+        return new Block(row, genPoint(xRange, yRange))
     }
     while(true) {
         const block = randBlocks()
@@ -55,7 +55,7 @@ class Board {
     get boardText(): string {
         return this.table.map(row => row.map(r => r as string).join('')).join("\n")
     }
-    isPuttable(other: BoardLayer): boolean {
+    isPuttable(other: Block): boolean {
         for (const {point: {y: y, x: x}, value: value} of other.iterator()) {
             if (y >= this.table.length) { return false }
             if (x >= this.table[y].length) { return false }
@@ -71,7 +71,7 @@ class Board {
             }
         }
     }
-    merge(other: BoardLayer, pointState: PointState): Board {
+    merge(other: Block, pointState: PointState): Board {
         if (!this.isPuttable(other)) { return this }
         const point = other.point
         for (const {point: {y: y, x: x}, value: value} of other.iterator()) {
@@ -81,7 +81,7 @@ class Board {
         }
         return this
     }
-    canMove(other: BoardLayer, move: Move): boolean {
+    canMove(other: Block, move: Move): boolean {
         if (!this.isPuttable(other)) { return false }
         return Array.from(other.iterator())
             .every(({point: point, value: value}) => {
@@ -127,7 +127,7 @@ const moveRight  =  (p: Point) => ({x: p.x+1, y: p.y}   as Point)
 const moveBottom =  (p: Point) => ({x: p.x,   y: p.y+1} as Point)
 const moveNone   =  (p: Point) => p
 
-class BoardLayer extends Board {
+class Block extends Board {
     public readonly point: Point
     private readonly rotationMatrix =
         [{from: [0, 0], to: [0, 2]},
@@ -157,8 +157,8 @@ class BoardLayer extends Board {
         this.table[2][2] = a
         this.table[2][1] = b
     }
-    movePoint(fn: (fn: Point) => Point): BoardLayer {
-        return new BoardLayer(this.table, fn(this.point))
+    movePoint(fn: (fn: Point) => Point): Block {
+        return new Block(this.table, fn(this.point))
     }
 }
 
@@ -197,13 +197,15 @@ namespace BlockCommand {
 class Game {
     private state: GameState
     private board: Board
-    private block: BoardLayer
+    private block: Block
     private score: number
-    constructor(block: BoardLayer) {
+    private blockGen: Iterator<Block>
+    constructor(block: Block) {
         this.board = new Board(boardRaw)
         this.state = GameState.Creating
         this.block = block
         this.score = 0
+        this.blockGen = blockGen(10, 0)
     }
     next(cmd?: BlockCommand) {
         switch (this.state) {
@@ -233,7 +235,8 @@ class Game {
                 break
             }
             case GameState.Creating: {
-                // TODO
+                this.block = blockGen().next().value as Block
+                this.state = this.board.isPuttable(this.block) ? GameState.Moving : GameState.Ending
                 break
             }
         }
@@ -256,21 +259,24 @@ class Game {
     }
 }
 
-const board = new Board(boardRaw)
-const gen = blockGen();
-for (let i = 0; i < 30000; i++) {
-    const b = gen.next().value as BoardLayer
-    if (!board.isPuttable(b)) { continue }
-    console.log(`move ok: ${board.canMove(b, moveBottom)}`)
-    board.merge(b, PointState.FixedBlock)
-    console.log(`[${i}] ~~~~~`)
-    console.log(b.boardText)
-    console.log(`(x: ${b.point.x}, y: ${b.point.y})`)
-    console.log(`rows: ${board.getEliminatingRows()}`)
-    console.log(`~~~~~~~~~`)
+function debug() {
+    const board = new Board(boardRaw)
+    const gen = blockGen();
+    for (let i = 0; i < 30000; i++) {
+        const b = gen.next().value as Block
+        if (!board.isPuttable(b)) { continue }
+        console.log(`move ok: ${board.canMove(b, moveBottom)}`)
+        board.merge(b, PointState.FixedBlock)
+        console.log(`[${i}] ~~~~~`)
+        console.log(b.boardText)
+        console.log(`(x: ${b.point.x}, y: ${b.point.y})`)
+        console.log(`rows: ${board.getEliminatingRows()}`)
+        console.log(`~~~~~~~~~`)
+        console.log(board.boardText)
+        console.log("")
+    }
+    console.log(board.eliminatingRows())
     console.log(board.boardText)
-    console.log("")
 }
-console.log(board.eliminatingRows())
-console.log(board.boardText)
+
 
