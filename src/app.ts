@@ -113,8 +113,8 @@ class Board {
             return row.slice(2, NumberOfColumn + 2).every(r => r === PointState.FixedBlock) ? i : null
         }) as Array<number>
     }
-    hasEliminatingRows(): boolean {
-        return this.getEliminatingRows().filter(v => v).length > 0
+    countEliminatingRows(): number {
+        return this.getEliminatingRows().filter(v => v).length
     }
     eliminatingRows() {
         const rs = this.getEliminatingRows()
@@ -191,9 +191,10 @@ class BoardLayer extends Board {
 enum GameState {
     Moving,
     Creating,
-    BlockStopping,
+    Stopping,
     Eliminating,
     Ending,
+    Starting,
 }
 
 enum BlockCommand {
@@ -222,10 +223,12 @@ class Game {
     private state: GameState
     private board: Board
     private block: BoardLayer
+    private score: number
     constructor(block: BoardLayer) {
         this.board = Board.fromString(boardRaw)
         this.state = GameState.Creating
         this.block = block
+        this.score = 0
     }
     next(cmd?: BlockCommand) {
         switch (this.state) {
@@ -233,9 +236,11 @@ class Game {
                 this.moveBlock(cmd || BlockCommand.Bottom)
                 break
             }
-            case GameState.BlockStopping: {
-                if (this.board.hasEliminatingRows()) {
+            case GameState.Stopping: {
+                const score = this.board.countEliminatingRows()
+                if (score > 0) {
                     this.state = GameState.Eliminating
+                    this.score += score
                 } else {
                     this.state = GameState.Creating
                 }
@@ -249,6 +254,7 @@ class Game {
                 break
             }
             case GameState.Ending: {
+                console.log("Game Over")
                 break
             }
             case GameState.Creating: {
@@ -266,7 +272,7 @@ class Game {
             this.block = this.block.movePoint(move)
         } else if (cmd === BlockCommand.Bottom) {
             this.board.merge(this.block, PointState.FixedBlock)
-            this.state = GameState.BlockStopping
+            this.state = GameState.Stopping
         }
     }
     rotateBlock() {
