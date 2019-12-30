@@ -90,18 +90,21 @@ class Board {
             }
         }
     }
-    merge(other: BoardLayer, pointState?: PointState): Board {
+    merge(other: BoardLayer, pointState: PointState): Board {
         if (!this.isPuttable(other)) { return this }
         let point = other.point
         for (const {y: y, x: x, value: value} of other.iterator()) {
-            if (this.table.length > y && this.table[y].length > x) {
-                this.table[y][x] = (pointState && (value !== PointState.Empty)) ? pointState : value
-            } else { this.table[y][x] = value }
+            if (this.table.length > y && this.table[y].length > x && value !== PointState.Empty) {
+                this.table[y][x] = pointState
+            }
         }
         return this
     }
     canMoveBottom(other: BoardLayer): boolean {
-        return true
+        if (!this.isPuttable(other)) { return false }
+        return Array.from(other.iterator())
+            .every(({y: y, x: x, value: value}) => {
+                value === PointState.Empty || (this.table[y+1][x] === PointState.Empty) })
     }
     static fromString(str: string): Board {
         return new this(strToTable(str))
@@ -131,14 +134,16 @@ class BoardLayer extends Board {
 
 let board = Board.fromString(boardRaw)
 let gen = blockGen();
-for (let i = 0; i < 2; i++) {
+for (let i = 0; i < 12; i++) {
     let b = gen.next().value as BoardLayer
     if (!board.isPuttable(b)) { continue }
+    console.log(`move ok: ${board.canMoveBottom(b)}`)
     board.merge(b, PointState.FixedBlock)
+    console.log(`[${i}] ~~~~~`)
     console.log(b.boardText)
-    console.log("~~")
+    console.log(`(x: ${b.point.x}, y: ${b.point.y})`)
+    console.log(`~~~~~~~~~`)
     console.log(board.boardText)
-    console.log("~~~~~~")
     console.log("")
 }
 
