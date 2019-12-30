@@ -201,7 +201,7 @@ enum RotType {
 class Block4x4 extends Block {
     private rType: RotType
     constructor(table: Table, point: Point, rType: RotType) {
-        super(strToTable(RotType.Left as string), point)
+        super(table, point)
         this.rType = rType
     }
     rotate(): Block {
@@ -218,11 +218,14 @@ class Block4x4 extends Block {
             }
             case RotType.Right: {
                 nextType = RotType.Down
+                break
             }
             case RotType.Down: {
                 nextType = RotType.Left
+                break
             }
         }
+        console.log(nextType)
         return new Block4x4(strToTable(nextType as string), this.point, nextType)
     }
     movePoint(fn: (fn: Point) => Point): Block {
@@ -231,13 +234,13 @@ class Block4x4 extends Block {
 }
 
 const Blocks = [
-    {ctor: Block3x3, text: ".1.\n1X1\n..."},  // T
-    {ctor: Block3x3, text: "...\n1X.\n.11"},  // Z
-    {ctor: Block3x3, text: "...\n.X1\n11."},  // Z_t
-    {ctor: Block3x3, text: ".1.\n.X.\n.11"},  // L
-    {ctor: Block3x3, text: ".1.\n.X.\n11."},  // L_t
-    {ctor: Block2x2, text: "11\n11"},             // O
-    {ctor: Block4x4, text: RotType.Left as string, rType: RotType.Left},             // I
+    // {ctor: Block3x3, text: ".1.\n1X1\n..."},  // T
+    // {ctor: Block3x3, text: "...\n1X.\n.11"},  // Z
+    // {ctor: Block3x3, text: "...\n.X1\n11."},  // Z_t
+    // {ctor: Block3x3, text: ".1.\n.X.\n.11"},  // L
+    // {ctor: Block3x3, text: ".1.\n.X.\n11."},  // L_t
+    // {ctor: Block2x2, text: "11\n11"},             // O
+   {ctor: Block4x4, text: RotType.Left as string, rType: RotType.Left},             // I
 ]
 
 enum GameState {
@@ -370,6 +373,7 @@ class Tetris {
             return
         }
         const v = block.center.x - p.x
+        console.log(`${v}, ${block.center.x}, ${p.x}`)
         switch(v) {
             case 0: {
                 return
