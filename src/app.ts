@@ -32,7 +32,9 @@ function create<T>(ctor: {new(...args: any[]): T}, args: any) {
 function blockGen(xRange: number = 8, yRange: number = 22): () => Block {
     function randBlocks(): Block {
         const block = Blocks[Math.floor(Math.random() * Blocks.length)]
-        return create(block.ctor, [strToTable(block.text), getPoint(xRange, yRange)])
+        let args = [getPoint(xRange, yRange)] as any[]
+        if (block.text) { args.push(strToTable(block.text)) }
+        return create(block.ctor, args)
     }
     return () => {
         let block = randBlocks()
@@ -139,7 +141,7 @@ const moveNone   =  (p: Point) => p
 
 abstract class Block extends Board {
     public readonly point: Point
-    constructor(table: Table, point: Point) {
+    constructor(point: Point, table: Table) {
         super(table)
         this.point = point
     }
@@ -170,39 +172,46 @@ class Block3x3 extends Block {
         for (const {from: [x, y], to: [newX, newY]} of this.rotationMatrix) {
             table[newX][newY] = this.table[x][y]
         }
-        return new Block3x3(table, this.point)
+        return new Block3x3(this.point, table)
     }
     movePoint(fn: (fn: Point) => Point): Block {
-        return new Block3x3(this.table, fn(this.point))
+        return new Block3x3(fn(this.point), this.table)
     }
 }
 
 class Block2x2 extends Block {
+    constructor(point: Point) {
+        super(point, strToTable("11\n11"))
+    }
     rotate(): Block {
-        return new Block2x2(this.tableClone(), this.point)
+        return new Block2x2(this.point)
     }
     movePoint(fn: (fn: Point) => Point): Block {
-        return new Block2x2(this.table, fn(this.point))
+        return new Block2x2(fn(this.point))
     }
 }
 
 class Block4x4 extends Block {
+    constructor(point: Point) {
+        super(point, strToTable(".1..\n.1..\n.1..\n.1.."))
+    }
     rotate(): Block {
-        return new Block4x4(this.tableClone(), this.point)
+        let table = this.tableClone()
+        return new Block4x4(this.point)
     }
     movePoint(fn: (fn: Point) => Point): Block {
-        return new Block4x4(this.table, fn(this.point))
+        return new Block4x4(fn(this.point))
     }
 }
 
 const Blocks = [
-    {ctor: Block3x3, text: ".1.\n1X1\n..."},          // T
-    {ctor: Block3x3, text: "...\n1X.\n.11"},          // Z
-    {ctor: Block3x3, text: "...\n.X1\n11."},          // Z_t
-    {ctor: Block3x3, text: ".1.\n.X.\n.11"},          // L
-    {ctor: Block3x3, text: ".1.\n.X.\n11."},          // L_t
-    {ctor: Block2x2, text: "11\n11"},                 // O
-    {ctor: Block4x4, text: ".1..\n.X..\n.1..\n.1.."}, // I
+    {ctor: Block3x3, text: ".1.\n1X1\n..."},  // T
+    {ctor: Block3x3, text: "...\n1X.\n.11"},  // Z
+    {ctor: Block3x3, text: "...\n.X1\n11."},  // Z_t
+    {ctor: Block3x3, text: ".1.\n.X.\n.11"},  // L
+    {ctor: Block3x3, text: ".1.\n.X.\n11."},  // L_t
+    {ctor: Block2x2, text: null},             // O
+    {ctor: Block4x4, text: null},             // I
 ]
 
 enum GameState {
