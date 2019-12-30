@@ -75,7 +75,7 @@ class Board {
         return this.table.map(row => row.map(r => r as string).join('')).join("\n")
     }
     isPuttable(other: BoardLayer): boolean {
-        for (const {y: y, x: x, value: value} of other.iterator()) {
+        for (const {point: {y: y, x: x}, value: value} of other.iterator()) {
             if (y >= this.table.length) { return false }
             if (x >= this.table[y].length) { return false }
             if (value === PointState.Empty || this.table[y][x] === PointState.Empty) { continue }
@@ -86,25 +86,36 @@ class Board {
     *iterator() {
         for (const [y, row] of this.table.entries()) {
             for (const [x, value] of row.entries()) {
-                yield {y: y, x: x, value: value}
+                yield {point: {y: y, x: x}, value: value}
             }
         }
     }
     merge(other: BoardLayer, pointState: PointState): Board {
         if (!this.isPuttable(other)) { return this }
         const point = other.point
-        for (const {y: y, x: x, value: value} of other.iterator()) {
+        for (const {point: {y: y, x: x}, value: value} of other.iterator()) {
             if (this.table.length > y && this.table[y].length > x && value !== PointState.Empty) {
                 this.table[y][x] = pointState
             }
         }
         return this
     }
-    canMoveBottom(other: BoardLayer): boolean {
+    canMove(other: BoardLayer, fn: (fn: Point) => Point): boolean {
         if (!this.isPuttable(other)) { return false }
         return Array.from(other.iterator())
-            .every(({y: y, x: x, value: value}) =>
-                   value === PointState.Empty || (this.table[y+1][x] === PointState.Empty))
+            .every(({point: point, value: value}) => {
+                const p = fn(point as Point)
+                return value === PointState.Empty || (this.table[p.y][p.x] === PointState.Empty)
+            })
+    }
+    canMoveBottom(other: BoardLayer): boolean {
+        return this.canMove(other, (p) => ({y: p.y + 1, x: p.x} as Point))
+    }
+    canMoveLeft(other: BoardLayer): boolean {
+        return this.canMove(other, (p) => ({y: p.y, x: p.x - 1} as Point))
+    }
+    canMoveRight(other: BoardLayer): boolean {
+        return this.canMove(other, (p) => ({y: p.y - 1, x: p.x} as Point))
     }
     getEliminatingRows(): Array<number> {
         return Array.from(this.table.entries()).map(([i, row]) => {
@@ -121,7 +132,7 @@ class Board {
         for(let i = rs.length - 1; i >= 0; i--) {
             for(var k = count; (i-k) >= 0 && (rs[i-k] != null); k++) {}
             count = k
-            items[i] = [i, i - count] // maybe negative
+            items[i] = [i, i - count] // may be negative
         }
         items.reverse()
         for (const [k, r] of items) {
@@ -159,8 +170,8 @@ class BoardLayer extends Board {
         this.point = point
     }
     *iterator() {
-        for(const {x: x, y: y, value: value} of super.iterator()) {
-            yield {y: this.point.y + y, x: this.point.x + x, value: value}
+        for(const {point: {y: y, x: x}, value: value} of super.iterator()) {
+            yield {point: {y: this.point.y + y, x: this.point.x + x}, value: value}
         }
     }
     rotate3x3() {
@@ -172,9 +183,6 @@ class BoardLayer extends Board {
         this.table[2][2] = a
         this.table[2][1] = b
     }
-    private cloneTable(): Table {
-        return this.table.map(row => Array.from(row))
-    }
     static fromStringAndPoint(str: string, point: Point): BoardLayer {
         return new BoardLayer(strToTable(str), point)
     }
@@ -184,12 +192,12 @@ class BoardLayer extends Board {
 enum GameState {
     Moving,
     Creating,
-    Stopping,
+    BlockStopping,
     Eliminating,
     Ending,
 }
 
-enum Command {
+enum BlockCommand {
     Rotate,
     Bottom,
     Left,
@@ -199,17 +207,46 @@ enum Command {
 class Game {
     private state: GameState
     private board: Board
-    constructor() {
+    private block: BoardLayer
+    constructor(block: BoardLayer) {
         this.board = Board.fromString(boardRaw)
         this.state = GameState.Creating
+        this.block = block
     }
-    next(command?: Command) {
+    next(cmd?: BlockCommand) {
         switch (this.state) {
-            case GameState.Moving:
-            case GameState.Stopping:
-            case GameState.Eliminating:
-            case GameState.Ending:
-            case GameState.Creating:
+            case GameState.Moving: {
+                this.moveBlock(cmd || BlockCommand.Bottom)
+                break
+            }
+            case GameState.BlockStopping: {
+                break
+            }
+            case GameState.Eliminating: {
+                break
+            }
+            case GameState.Ending: {
+                break
+            }
+            case GameState.Creating: {
+                break
+            }
+        }
+    }
+    moveBlock(cmd: BlockCommand) {
+        switch(cmd) {
+            case BlockCommand.Rotate: {
+                break
+            }
+            case BlockCommand.Bottom: {
+                break
+            }
+            case BlockCommand.Left: {
+                break
+            }
+            case BlockCommand.Right: {
+                break
+            }
         }
     }
 }
