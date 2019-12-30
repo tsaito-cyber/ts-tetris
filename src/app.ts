@@ -37,8 +37,8 @@ function* blockGen(xRange: number = 10, yRange: number = 22) {
         return new Block(row, genPoint(xRange, yRange))
     }
     while(true) {
-        const block = randBlocks()
-        for(let i = 0; i < Math.floor(Math.random() * 4); i++) { block.rotate3x3() }
+        let block = randBlocks()
+        for(let i = 0; i < Math.floor(Math.random() * 4); i++) { block = block.rotate3x3() }
         yield block
     }
 }
@@ -54,6 +54,15 @@ class Board {
     }
     get boardText(): string {
         return this.table.map(row => row.map(r => r as string).join('')).join("\n")
+    }
+    unPuttablePoint(other: Block): Point | void {
+        for (const {point: {y: y, x: x}, value: value} of other.iterator()) {
+            if (y >= this.table.length) { continue }
+            if (x >= this.table[y].length) { continue }
+            if (value === PointState.Empty || this.table[y][x] === PointState.Empty) { continue }
+            return ({y: y, x: x} as Point)
+        }
+        return
     }
     isPuttable(other: Block): boolean {
         for (const {point: {y: y, x: x}, value: value} of other.iterator()) {
@@ -97,6 +106,9 @@ class Board {
     countEliminatingRows(): number {
         return this.getEliminatingRows().filter(v => v).length
     }
+    tableClone(): Table {
+        return this.table.map(row => [...row])
+    }
     eliminatingRows() {
         const rs = this.getEliminatingRows()
         let items = []
@@ -138,24 +150,24 @@ class Block extends Board {
          {from: [1, 0], to: [0, 1]},
          {from: [2, 1], to: [1, 0]},
          {from: [1, 2], to: [2, 1]}] // [2, 1]
-
     constructor(table: Table, point: Point) {
         super(table)
         this.point = point
+    }
+    get center(): Point {
+        return ({x: this.point.x + 1, y: this.point.y + 1} as Point) // FIX
     }
     *iterator() {
         for(const {point: {y: y, x: x}, value: value} of super.iterator()) {
             yield {point: {y: this.point.y + y, x: this.point.x + x}, value: value}
         }
     }
-    rotate3x3() {
-        const a = this.table[0][2]
-        const b = this.table[1][2]
+    rotate3x3(): Block {
+        let table = this.tableClone()
         for (const {from: [x, y], to: [newX, newY]} of this.rotationMatrix) {
-            this.table[newX][newY] = this.table[x][y]
+            table[newX][newY] = this.table[x][y]
         }
-        this.table[2][2] = a
-        this.table[2][1] = b
+        return new Block(table, this.point)
     }
     movePoint(fn: (fn: Point) => Point): Block {
         return new Block(this.table, fn(this.point))
@@ -255,7 +267,27 @@ class Game {
         }
     }
     rotateBlock() {
-        // TODO
+        let block = this.block.rotate3x3()
+        let p = this.board.unPuttablePoint(block)
+        if (!p) {
+            this.block = block
+            return
+        }
+        const v = block.center.x - p.x
+        switch(v) {
+            case 0:
+                return
+            case 1:
+                if (this.board.canMove(block, moveLeft)) {
+                    this.block = this.block.movePoint(moveLeft)
+                }
+            case -1:
+                if (this.board.canMove(block, moveRight)) {
+                    this.block = this.block.movePoint(moveRight)
+                }
+            default:
+                throw new Error('I seem not to be falling into this line...')
+        }
     }
 }
 
