@@ -46,7 +46,9 @@ function* blockGen() {
         return BoardLayer.fromStringAndPoint(BlockStrings[Math.floor(Math.random() * BlockStrings.length)], genPoint())
     }
     while(true) {
-        yield randBlocks()
+        const block = randBlocks()
+        for(let i = 0; i < Math.floor(Math.random() * 4); i++) { block.rotate3x3() }
+        yield block
     }
 }
 
@@ -92,7 +94,7 @@ class Board {
     }
     merge(other: BoardLayer, pointState: PointState): Board {
         if (!this.isPuttable(other)) { return this }
-        let point = other.point
+        const point = other.point
         for (const {y: y, x: x, value: value} of other.iterator()) {
             if (this.table.length > y && this.table[y].length > x && value !== PointState.Empty) {
                 this.table[y][x] = pointState
@@ -118,6 +120,16 @@ interface Point {
 
 class BoardLayer extends Board {
     public readonly point: Point
+    private readonly rotationMatrix =
+        [{from: [0, 0], to: [0, 2]},
+         {from: [2, 0], to: [0, 0]},
+         {from: [2, 2], to: [2, 0]},
+         {from: [0, 2], to: [2, 2]}, // [2, 2]
+         {from: [0, 1], to: [1, 2]},
+         {from: [1, 0], to: [0, 1]},
+         {from: [2, 1], to: [1, 0]},
+         {from: [1, 2], to: [2, 1]}] // [2, 1]
+
     constructor(table: Table, point: Point) {
         super(table)
         this.point = point
@@ -127,15 +139,27 @@ class BoardLayer extends Board {
             yield {y: this.point.y + y, x: this.point.x + x, value: value}
         }
     }
+    rotate3x3() {
+        const a = this.table[0][2]
+        const b = this.table[1][2]
+        for (const {from: [x, y], to: [newX, newY]} of this.rotationMatrix) {
+            this.table[newX][newY] = this.table[x][y]
+        }
+        this.table[2][2] = a
+        this.table[2][1] = b
+    }
+    private cloneTable(): Table {
+        return this.table.map(row => Array.from(row))
+    }
     static fromStringAndPoint(str: string, point: Point): BoardLayer {
         return new BoardLayer(strToTable(str), point)
     }
 }
 
-let board = Board.fromString(boardRaw)
-let gen = blockGen();
+const board = Board.fromString(boardRaw)
+const gen = blockGen();
 for (let i = 0; i < 12; i++) {
-    let b = gen.next().value as BoardLayer
+    const b = gen.next().value as BoardLayer
     if (!board.isPuttable(b)) { continue }
     console.log(`move ok: ${board.canMoveBottom(b)}`)
     board.merge(b, PointState.FixedBlock)
