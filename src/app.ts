@@ -209,12 +209,16 @@ namespace BlockCommand {
     }
     export function fromString(str: string): BlockCommand | void {
         switch(str) {
+            case 'd':
             case 'down':
                 return BlockCommand.Down
+            case 'r':
             case 'right':
                 return BlockCommand.Right
+            case 'l':
             case 'left':
                 return BlockCommand.Left
+            case 'u':
             case 'up':
                 return BlockCommand.Rotate
             default:
@@ -335,6 +339,7 @@ class CommandLine {
     private tetris: Tetris
     private clockdown: number
     private rl: any
+    private debug: boolean
     constructor() {
         this.tetris = new Tetris()
         this.rl = readline.createInterface({
@@ -342,9 +347,12 @@ class CommandLine {
             output: process.stdout,
             terminal: true,
         })
-        process.stdin.setRawMode(true)
+        this.debug = true
         this.clockdown = 1000
-        this.clock()
+        if (!debug) {
+            process.stdin.setRawMode(true)
+            this.clock()
+        }
     }
     clock() {
         setTimeout(() => {
@@ -353,7 +361,22 @@ class CommandLine {
             this.screen(`clockdown`)
         }, this.clockdown)
     }
+    debugRun() {
+        console.log(this.tetris.board.text)
+        out.write(' > ')
+        this.rl.on('line', (line: string) => {
+            const cmd = BlockCommand.fromString(line)
+            if (cmd != null) { this.tetris.next(cmd) }
+            if (this.tetris.gameOver) { process.exit(0) }
+            console.log(this.tetris.board.text)
+            out.write(' > ')
+        })
+    }
     run() {
+        if (this.debug) {
+            this.debugRun()
+            return
+        }
         console.log(this.tetris.board.text)
         process.stdin.on('keypress', (c: string, key: any) => {
             const cmd = BlockCommand.fromString(key.name as string)
