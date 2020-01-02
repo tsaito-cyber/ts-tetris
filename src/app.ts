@@ -152,9 +152,13 @@ abstract class Block extends Board {
             yield {point: {y: this.point.y + y, x: this.point.x + x}, value: value}
         }
     }
+    clone(): Block {
+        return this.constructor(this.table, this.point) as Block
+    }
     abstract get center(): Point
-    abstract rotate(): Block
     abstract movePoint(fn: (fn: Point) => Point): Block
+    abstract rotate(): Block
+    abstract rotateOn(board: Board): Block | void
 }
 
 class Block3x3 extends Block {
@@ -167,6 +171,12 @@ class Block3x3 extends Block {
          {from: [1, 0], to: [0, 1]},
          {from: [2, 1], to: [1, 0]},
          {from: [1, 2], to: [2, 1]}]
+    get center(): Point {
+        return ({x: this.point.x + 1, y: this.point.y + 1} as Point)
+    }
+    movePoint(fn: (fn: Point) => Point): Block {
+        return new Block3x3(this.table, fn(this.point))
+    }
     rotate(): Block {
         let table = this.tableClone()
         for (const {from: [x, y], to: [newX, newY]} of this.rotationMatrix) {
@@ -174,11 +184,31 @@ class Block3x3 extends Block {
         }
         return new Block3x3(table, this.point)
     }
-    get center(): Point {
-        return ({x: this.point.x + 1, y: this.point.y + 1} as Point)
-    }
-    movePoint(fn: (fn: Point) => Point): Block {
-        return new Block3x3(this.table, fn(this.point))
+    rotateOn(board: Board): Block | void {
+        let block = this.rotate()
+        let p = board.unPuttablePoint(block)
+        if (!p) { return block }
+        const v = p.x - block.center.x
+        switch(v) {
+            case 0: {
+                return
+            }
+            case 1: {
+                if (board.canMove(block, moveLeft)) {
+                    return block.movePoint(moveLeft)
+                }
+                break
+            }
+            case -1: {
+                if (board.canMove(block, moveRight)) {
+                    return block.movePoint(moveRight)
+                }
+                break
+            }
+            default: {
+                throw new Error('I think it wont fall on this branch')
+            }
+        }
     }
 }
 
@@ -186,20 +216,23 @@ class Block2x2 extends Block {
     constructor(table: Table, point: Point) {
         super(table, point)
     }
-    rotate(): Block {
-        return new Block2x2(this.table, this.point)
-    }
     get center(): Point {
         return {...this.point}
     }
     movePoint(fn: (fn: Point) => Point): Block {
         return new Block2x2(this.table, fn(this.point))
     }
+    rotate(): Block {
+        return new Block2x2(this.table, this.point)
+    }
+    rotateOn(board: Board): Block | void {
+        return this
+    }
 }
 
 enum RotType {
-    Vertical  = ".1..\n.1..\n.1..\n.1..",
-    Horizon   = "....\n1111\n....\n....",
+    Vertical  = ".1..\n.1..\n.X..\n.1..",
+    Horizon   = "....\n....\n1X11\n....",
 }
 
 class Block4x4 extends Block {
@@ -207,6 +240,12 @@ class Block4x4 extends Block {
     constructor(table: Table, point: Point, rType: RotType) {
         super(table, point)
         this.rType = rType
+    }
+    movePoint(fn: (fn: Point) => Point): Block {
+        return new Block4x4(this.table, fn(this.point), this.rType)
+    }
+    get center(): Point {
+        return ({x: this.point.x + 1, y: this.point.y + 1} as Point)
     }
     rotate(): Block {
         let table = this.tableClone()
@@ -224,11 +263,26 @@ class Block4x4 extends Block {
         console.log(nextType)
         return new Block4x4(strToTable(nextType as string), this.point, nextType)
     }
-    movePoint(fn: (fn: Point) => Point): Block {
-        return new Block4x4(this.table, fn(this.point), this.rType)
-    }
-    get center(): Point {
-        return ({x: this.point.x + 1, y: this.point.y + 1} as Point)
+    rotateOn(board: Board): Block | void {
+        let block = this.rotate()
+        let p = board.unPuttablePoint(block)
+        if (!p) { return block }
+        const v = block.center.x - p.x
+        if (v == 0) { return }
+        else if (v > 0) {
+            for (var k = p.x; k >= 0 && board.table[p.y][k] != PointState.Empty; k++) {}
+            let pos = k - p.x
+            if (board.canMove(block, moveRightFn(pos))) {
+                return block.movePoint(moveRightFn(pos))
+            }
+        } else if (v < 0) {
+            const row = board.table[p.y]
+            for (var k = p.x; k < row.length && row[k] != PointState.Empty; k--) {}
+            let pos = p.x - k
+            if (board.canMove(block, moveLeftFn(pos))) {
+                return block.movePoint(moveLeftFn(pos))
+            }
+        }
     }
 }
 
@@ -365,28 +419,8 @@ class Tetris {
         }
     }
     rotateBlock() {
-        let block = this.block.rotate()
-        let p = this._board.unPuttablePoint(block)
-        if (!p) {
-            this.block = block
-            return
-        }
-        const v = block.center.x - p.x
-        if (v == 0) { return }
-        else if (v > 0) {
-            for (var k = p.x; k >= 0 && this._board.table[p.y][k] != PointState.Empty; k++) {}
-            let pos = k - p.x
-            if (this._board.canMove(block, moveRightFn(pos))) {
-                this.block = block.movePoint(moveRightFn(pos))
-            }
-        } else if (v < 0) {
-            const row = this._board.table[p.y]
-            for (var k = p.x; k < row.length && row[k] != PointState.Empty; k--) {}
-            let pos = p.x - k
-            if (this._board.canMove(block, moveLeftFn(pos))) {
-                this.block = block.movePoint(moveLeftFn(pos))
-            }
-        }
+        let block = this.block.rotateOn(this._board)
+        if (block) { this.block = block }
     }
 }
 
@@ -395,14 +429,14 @@ class GameCommandLine {
     private clockdown: number
     private rl: any
     private debug: boolean
-    constructor() {
+    constructor(debug: boolean = false) {
         this.tetris = new Tetris()
         this.rl = readline.createInterface({
             input: process.stdin,
             output: process.stdout,
             terminal: true,
         })
-        this.debug = false
+        this.debug = debug
         this.clockdown = 1000
         if (!this.debug) {
             process.stdin.setRawMode(true)
@@ -475,4 +509,4 @@ function debug() {
     console.log(board.text)
 }
 
-(new GameCommandLine()).run()
+(new GameCommandLine(true)).run()
