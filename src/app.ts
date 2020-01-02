@@ -225,8 +225,11 @@ class Block4x4 extends Block {
         {from: {y: 1, x:1}, to: {y: 2, x: 2}},
         {from: {y: 3, x:1}, to: {y: 2, x: 0}},
     ]
-    get center(): Point {
-        return ({x: this.point.x + 1, y: this.point.y + 1} as Point)
+    get isHorizonal(): boolean {
+        return this.table[2][3] === PointState.UnboundedBlock
+    }
+    get isVertical(): boolean {
+        return this.table[0][1] === PointState.UnboundedBlock
     }
     rotate(): Block4x4 {
         let table = this.tableClone()
@@ -239,20 +242,29 @@ class Block4x4 extends Block {
         let block = this.rotate()
         let p = board.unPuttablePoint(block)
         if (!p) { return block }
-        const v = block.center.x - p.x
-        if (v == 0) { return }
-        else if (v > 0) {
-            for (var k = p.x; k >= 0 && board.table[p.y][k] != PointState.Empty; k++) {}
-            let pos = k - p.x
-            if (board.canMove(block, moveRightFn(pos))) {
-                return block.movePoint(moveRightFn(pos))
+        if (block.isVertical) { return }
+        switch (p.x - this.point.x) {
+            case 0: {
+                if (board.canMove(block, moveRight)) {
+                    return block.movePoint(moveRight)
+                }
+                break
             }
-        } else if (v < 0) {
-            const row = board.table[p.y]
-            for (var k = p.x; k < row.length && row[k] != PointState.Empty; k--) {}
-            let pos = p.x - k
-            if (board.canMove(block, moveLeftFn(pos))) {
-                return block.movePoint(moveLeftFn(pos))
+            case 2: {
+                if (board.canMove(block, moveLeft)) {
+                    return block.movePoint(moveLeft)
+                }
+                break
+            }
+            case 3: {
+                if (board.canMove(block, moveLeftFn(2))) {
+                    return block.movePoint(moveLeftFn(2))
+                }
+                break
+            }
+            default: {
+                console.log(`${p.x}, ${p.y}`)
+                throw new Error('I think it wont fall on this branch')
             }
         }
     }
