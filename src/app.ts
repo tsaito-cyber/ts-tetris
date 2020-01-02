@@ -176,31 +176,30 @@ abstract class Block extends Board {
         let width: number = 0
         const len = this.table.length
         for (let i = 0; i < len; i++) {
-            for (let j = i; j < len; j++) {
-                if (this.table[i][j] !== PointState.Empty && y < 0) {
-                    x = j
-                }
-                if (this.table[j][i] !== PointState.Empty && x < 0) {
-                    y = j
-                }
-            }
             for (let j = 0; j < len; j++) {
                 if (this.table[i][j] !== PointState.Empty) {
-                    height = i > height ? (i+1) : height
-                    width  = j > width  ? (j+1) : width
+                    height = i > height ? i : height
+                    width  = j > width  ? j : width
+                    if (x < 0 || x > j) { x = j }
+                    if (y < 0 || y > i) { y = i }
                 }
             }
         }
-        return {point: {x: x, y: y}, width: width - x, height: height - y}
+        return {point: {x: x, y: y}, width: width - x + 1, height: height - y + 1}
+    }
+    info() {
+        const box = this.box
+        console.log(`${box.width}, ${box.point.x}, ${box.point.x}`)
+        console.log(`from: ${2 - box.point.x}, to: ${11 - (this.baseLength - (box.width + box.point.x))}`)
+        console.log(`${this.text}`)
+        console.log(`x: ${this.point.x}, y: ${this.point.y}`)
+        console.log(`~~~~~~~`)
     }
     adjustPoint(boardWidth: number = 14, boardHeight: number = 24): Block {
-        console.log(`${this.box.width}, ${this.point.x}, ${this.baseLength}`)
-        console.log(`from: ${2 - this.box.point.x}, to: ${11 - (this.baseLength - (this.box.width + this.point.x))}`)
-        this.point.x = rand(2 - this.box.point.x, 11 - (this.baseLength - (this.box.width + this.point.x)))
+        this.info()
+        const box = this.box
+        this.point.x = rand(2 - box.point.x, (12 - this.baseLength) + box.point.x)
         this.point.y = 2 - this.box.point.y
-        console.log(`x: ${this.point.x}, y: ${this.point.y}`)
-        console.log(`${this.text}`)
-        console.log(`~~~~~~~`)
         return this
     }
     abstract rotate(): Block
@@ -526,7 +525,7 @@ class GameCommandLine {
                 let p = this.tetris.block.point
                 console.log(`your score: ${this.tetris.score}`)
                 console.log(`pos: (${p.x}, ${p.y})`)
-                console.log(`table: ${this.tetris.block.text}`)
+                this.tetris.block.info()
                 process.exit(0)
             }
         })
