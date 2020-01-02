@@ -12,7 +12,7 @@ enum PointState {
 function strToTable(str: string): Table {
     return str.split("\n").map(row => toPointStates(row))
 }
-9
+
 function toPointStates(str: string): Array<PointState> {
     return [...str].map(char => char as PointState)
 }
