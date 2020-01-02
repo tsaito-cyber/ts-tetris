@@ -1,6 +1,7 @@
 const readline = require('readline');
 const out = process.stdout
 
+// 今後クラスにする
 enum PointState {
     FixedBlock = '0',
     Empty = '.',
@@ -32,15 +33,18 @@ function create<T>(ctor: {new(...args: any[]): T}, args: any) {
 function blockGen(xRange: number = 8, yRange: number = 22): () => Block {
     function randBlocks(): Block {
         const block = Blocks[Math.floor(Math.random() * Blocks.length)]
-        let args = [strToTable(block.text), getPoint(xRange, yRange)] as any[]
-        if (block.rType) { args.push(block.rType) }
+        let args = [strToTable(block.text), {x: 2, y:0}] as any[]
         return create(block.ctor, args)
     }
     return () => {
-        let block = randBlocks()
-        for(let i = 0; i < Math.floor(Math.random() * 4); i++) { block = block.rotate() }
-        return block
+        const block = randBlocks()
+        return block.adjustPoint()
     }
+}
+
+// from <= retval < to
+function rand(from: number, to: number) {
+    return Math.floor(Math.random() * (to - from)) + from
 }
 
 function getPoint(xRange: number = 8, yRange: number = 22): Point {
@@ -55,14 +59,15 @@ class Board {
     get text(): string {
         return this.table.map(row => row.map(r => r as string).join('')).join("\n")
     }
-    unPuttablePoint(other: Block): Point | void {
-        for (const {point: {y: y, x: x}, value: value} of Array.from(other.iterator()).reverse()) {
+    unPuttablePoints(other: Block): Point[] {
+        let points: Point[] = []
+        for (const {point: {y: y, x: x}, value: value} of Array.from(other.iterator())) {
             if (y >= this.table.length) { continue }
             if (x >= this.table[y].length) { continue }
             if (value === PointState.Empty || this.table[y][x] === PointState.Empty) { continue }
-            return ({y: y, x: x} as Point)
+            points.push({y: y, x: x})
         }
-        return
+        return points
     }
     *iterator() {
         for (const [y, row] of this.table.entries()) {
@@ -141,6 +146,12 @@ const moveRight   = moveRightFn(1)
 const moveDown    =  (p: Point) => ({x: p.x,   y: p.y+1} as Point)
 const moveNone    =  (p: Point) => p
 
+interface Box {
+    point: Point,
+    height: number,
+    width: number,
+}
+
 abstract class Block extends Board {
     public readonly point: Point
     constructor(table: Table, point: Point) {
@@ -152,9 +163,48 @@ abstract class Block extends Board {
             yield {point: {y: this.point.y + y, x: this.point.x + x}, value: value}
         }
     }
-    abstract get center(): Point
+    clone(): Block {
+        return this.constructor(this.tableClone(), {...this.point})
+    }
+    movePoint(fn: (fn: Point) => Point): Block {
+        return this.constructor(this.table, fn(this.point))
+    }
+    get box(): Box {
+        let x: number = -1
+        let y: number = -1
+        let height: number = 0
+        let width: number = 0
+        const len = this.table.length
+        for (let i = 0; i < len; i++) {
+            for (let j = 0; j < len; j++) {
+                if (this.table[i][j] !== PointState.Empty) {
+                    height = i > height ? i : height
+                    width  = j > width  ? j : width
+                    if (x < 0 || x > j) { x = j }
+                    if (y < 0 || y > i) { y = i }
+                }
+            }
+        }
+        return {point: {x: x, y: y}, width: width - x + 1, height: height - y + 1}
+    }
+    info() {
+        const box = this.box
+        console.log(`${box.width}, ${box.point.x}, ${box.point.x}`)
+        console.log(`from: ${2 - box.point.x}, to: ${11 - (this.baseLength - (box.width + box.point.x))}`)
+        console.log(`${this.text}`)
+        console.log(`x: ${this.point.x}, y: ${this.point.y}`)
+        console.log(`~~~~~~~`)
+    }
+    adjustPoint(boardWidth: number = 14, boardHeight: number = 24): Block {
+        this.info()
+        const box = this.box
+        this.point.x = rand(2 - box.point.x, (12 - this.baseLength) + box.point.x)
+        this.point.y = 2 - this.box.point.y
+        return this
+    }
     abstract rotate(): Block
-    abstract movePoint(fn: (fn: Point) => Point): Block
+    abstract rotateOn(board: Board): Block | void
+    abstract get baseLength(): number
 }
 
 class Block3x3 extends Block {
@@ -167,79 +217,133 @@ class Block3x3 extends Block {
          {from: [1, 0], to: [0, 1]},
          {from: [2, 1], to: [1, 0]},
          {from: [1, 2], to: [2, 1]}]
-    rotate(): Block {
+    get baseLength(): number {
+        return 3
+    }
+    get center(): Point {
+        return ({x: this.point.x + 1, y: this.point.y + 1} as Point)
+    }
+    rotate(): Block3x3 {
         let table = this.tableClone()
         for (const {from: [x, y], to: [newX, newY]} of this.rotationMatrix) {
             table[newX][newY] = this.table[x][y]
         }
-        return new Block3x3(table, this.point)
+        return new Block3x3(table, {...this.point})
     }
-    get center(): Point {
-        return ({x: this.point.x + 1, y: this.point.y + 1} as Point)
-    }
-    movePoint(fn: (fn: Point) => Point): Block {
-        return new Block3x3(this.table, fn(this.point))
+    rotateOn(board: Board): Block | void {
+        let block = this.rotate()
+        let p = board.unPuttablePoints(block)
+        if (p.length === 0) { return block }
+        const v = p[0].x - block.center.x
+        switch(v) {
+            case 0: {
+                return
+            }
+            case 1: {
+                if (board.canMove(block, moveLeft)) {
+                    return block.movePoint(moveLeft)
+                }
+                break
+            }
+            case -1: {
+                if (board.canMove(block, moveRight)) {
+                    return block.movePoint(moveRight)
+                }
+                break
+            }
+            default: {
+                throw new Error('I think it wont fall on this branch')
+            }
+        }
     }
 }
 
 class Block2x2 extends Block {
-    constructor(table: Table, point: Point) {
-        super(table, point)
-    }
     rotate(): Block {
-        return new Block2x2(this.table, this.point)
+        return this.clone()
     }
-    get center(): Point {
-        return {...this.point}
+    rotateOn(board: Board): Block | void {
+        return this.clone()
     }
-    movePoint(fn: (fn: Point) => Point): Block {
-        return new Block2x2(this.table, fn(this.point))
+    get baseLength(): number {
+        return 2
     }
-}
-
-enum RotType {
-    Vertical  = ".1..\n.1..\n.1..\n.1..",
-    Horizon   = "....\n1111\n....\n....",
 }
 
 class Block4x4 extends Block {
-    private rType: RotType
-    constructor(table: Table, point: Point, rType: RotType) {
-        super(table, point)
-        this.rType = rType
+    private readonly rotationMatrix = [
+        {from: {y: 0, x:1}, to: {y: 2, x: 3}},
+        {from: {y: 1, x:1}, to: {y: 2, x: 2}},
+        {from: {y: 3, x:1}, to: {y: 2, x: 0}},
+    ]
+    get baseLength(): number {
+        return 4
     }
-    rotate(): Block {
+    get isHorizonal(): boolean {
+        return this.table[2][3] === PointState.UnboundedBlock
+    }
+    get isVertical(): boolean {
+        return this.table[0][1] === PointState.UnboundedBlock
+    }
+    rotate(): Block4x4 {
         let table = this.tableClone()
-        let nextType: RotType
-        switch (this.rType) {
-            case RotType.Vertical: {
-                nextType = RotType.Horizon
+        for (const {from: {y: y, x:x}, to: {y: newY, x: newX}} of this.rotationMatrix) {
+            [table[y][x], table[newY][newX]] = [table[newY][newX], table[y][x]]
+        }
+        return new Block4x4(table, {...this.point})
+    }
+    rotateOn(board: Board): Block | void {
+        let block = this.rotate()
+        let ps = board.unPuttablePoints(block)
+        if (ps.length === 0) { return block }
+        if (block.isVertical) { return }
+        let p = ps.pop() as Point
+        switch (p.x - this.point.x) {
+            case 0: {
+                if (board.canMove(block, moveRight)) {
+                    return block.movePoint(moveRight)
+                }
                 break
             }
-            case RotType.Horizon: {
-                nextType = RotType.Vertical
+            case 2: {
+                if (board.canMove(block, moveLeft)) {
+                    return block.movePoint(moveLeft)
+                }
                 break
+            }
+            case 3: {
+                if (ps.length == 1 && board.canMove(block, moveLeftFn(2))) {
+                    return block.movePoint(moveLeftFn(2))
+                }
+                if (ps.length == 0 && board.canMove(block, moveLeft)) {
+                    return block.movePoint(moveLeft)
+                }
+                break
+            }
+            default: {
+                console.log(`${p.x}, ${p.y}`)
+                throw new Error('I think it wont fall on this branch')
             }
         }
-        console.log(nextType)
-        return new Block4x4(strToTable(nextType as string), this.point, nextType)
-    }
-    movePoint(fn: (fn: Point) => Point): Block {
-        return new Block4x4(this.table, fn(this.point), this.rType)
-    }
-    get center(): Point {
-        return ({x: this.point.x + 1, y: this.point.y + 1} as Point)
     }
 }
 
 const Blocks = [
     {ctor: Block3x3, text: ".1.\n1X1\n..."},  // T
     {ctor: Block3x3, text: "...\n1X.\n.11"},  // Z
+    {ctor: Block3x3, text: ".1.\n1X.\n1.."},  // Z'
     {ctor: Block3x3, text: "...\n.X1\n11."},  // Z_t
+    {ctor: Block3x3, text: ".1.\n.X1\n..1"},  // Z_t'
     {ctor: Block3x3, text: ".1.\n.X.\n.11"},  // L
+    {ctor: Block3x3, text: "...\n1X1\n1.."},  // L'
+    {ctor: Block3x3, text: "11.\n.X.\n.1."},  // L''
+    {ctor: Block3x3, text: "..1\n1X1\n..."},  // L'''
     {ctor: Block3x3, text: ".1.\n.X.\n11."},  // L_t
+    {ctor: Block3x3, text: "1..\n1X1\n..."},  // L_t'
+    {ctor: Block3x3, text: ".11\n.X.\n.1."},  // L_t''
+    {ctor: Block3x3, text: "...\n1X1\n..1"},  // L_t'''
     {ctor: Block2x2, text: "11\n11"},         // O
-    {ctor: Block4x4, text: RotType.Vertical as string, rType: RotType.Vertical}, // I
+    {ctor: Block4x4, text: ".1..\n.1..\n.X..\n.1.."}, // I
 ]
 
 enum GameState {
@@ -365,28 +469,8 @@ class Tetris {
         }
     }
     rotateBlock() {
-        let block = this.block.rotate()
-        let p = this._board.unPuttablePoint(block)
-        if (!p) {
-            this.block = block
-            return
-        }
-        const v = block.center.x - p.x
-        if (v == 0) { return }
-        else if (v > 0) {
-            for (var k = p.x; k >= 0 && this._board.table[p.y][k] != PointState.Empty; k++) {}
-            let pos = k - p.x
-            if (this._board.canMove(block, moveRightFn(pos))) {
-                this.block = block.movePoint(moveRightFn(pos))
-            }
-        } else if (v < 0) {
-            const row = this._board.table[p.y]
-            for (var k = p.x; k < row.length && row[k] != PointState.Empty; k--) {}
-            let pos = p.x - k
-            if (this._board.canMove(block, moveLeftFn(pos))) {
-                this.block = block.movePoint(moveLeftFn(pos))
-            }
-        }
+        let block = this.block.rotateOn(this._board)
+        if (block) { this.block = block }
     }
 }
 
@@ -395,14 +479,14 @@ class GameCommandLine {
     private clockdown: number
     private rl: any
     private debug: boolean
-    constructor() {
+    constructor(debug: boolean = false) {
         this.tetris = new Tetris()
         this.rl = readline.createInterface({
             input: process.stdin,
             output: process.stdout,
             terminal: true,
         })
-        this.debug = false
+        this.debug = debug
         this.clockdown = 1000
         if (!this.debug) {
             process.stdin.setRawMode(true)
@@ -441,7 +525,7 @@ class GameCommandLine {
                 let p = this.tetris.block.point
                 console.log(`your score: ${this.tetris.score}`)
                 console.log(`pos: (${p.x}, ${p.y})`)
-                console.log(`table: ${this.tetris.block.text}`)
+                this.tetris.block.info()
                 process.exit(0)
             }
         })
