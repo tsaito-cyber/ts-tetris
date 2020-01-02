@@ -153,10 +153,11 @@ abstract class Block extends Board {
         }
     }
     clone(): Block {
-        return this.constructor(this.table, this.point) as Block
+        return this.constructor(this.tableClone(), {...this.point})
     }
-    abstract get center(): Point
-    abstract movePoint(fn: (fn: Point) => Point): Block
+    movePoint(fn: (fn: Point) => Point): Block {
+        return this.constructor(this.table, fn(this.point))
+    }
     abstract rotate(): Block
     abstract rotateOn(board: Board): Block | void
 }
@@ -174,10 +175,7 @@ class Block3x3 extends Block {
     get center(): Point {
         return ({x: this.point.x + 1, y: this.point.y + 1} as Point)
     }
-    movePoint(fn: (fn: Point) => Point): Block {
-        return new Block3x3(this.table, fn(this.point))
-    }
-    rotate(): Block {
+    rotate(): Block3x3 {
         let table = this.tableClone()
         for (const {from: [x, y], to: [newX, newY]} of this.rotationMatrix) {
             table[newX][newY] = this.table[x][y]
@@ -213,17 +211,8 @@ class Block3x3 extends Block {
 }
 
 class Block2x2 extends Block {
-    constructor(table: Table, point: Point) {
-        super(table, point)
-    }
-    get center(): Point {
-        return {...this.point}
-    }
-    movePoint(fn: (fn: Point) => Point): Block {
-        return new Block2x2(this.table, fn(this.point))
-    }
     rotate(): Block {
-        return new Block2x2(this.table, this.point)
+        return this
     }
     rotateOn(board: Board): Block | void {
         return this
@@ -247,7 +236,7 @@ class Block4x4 extends Block {
     get center(): Point {
         return ({x: this.point.x + 1, y: this.point.y + 1} as Point)
     }
-    rotate(): Block {
+    rotate(): Block4x4 {
         let table = this.tableClone()
         let nextType: RotType
         switch (this.rType) {
@@ -260,7 +249,6 @@ class Block4x4 extends Block {
                 break
             }
         }
-        console.log(nextType)
         return new Block4x4(strToTable(nextType as string), this.point, nextType)
     }
     rotateOn(board: Board): Block | void {
