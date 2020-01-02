@@ -33,7 +33,6 @@ function blockGen(xRange: number = 8, yRange: number = 22): () => Block {
     function randBlocks(): Block {
         const block = Blocks[Math.floor(Math.random() * Blocks.length)]
         let args = [strToTable(block.text), getPoint(xRange, yRange)] as any[]
-        if (block.rType) { args.push(block.rType) }
         return create(block.ctor, args)
     }
     return () => {
@@ -180,7 +179,7 @@ class Block3x3 extends Block {
         for (const {from: [x, y], to: [newX, newY]} of this.rotationMatrix) {
             table[newX][newY] = this.table[x][y]
         }
-        return new Block3x3(table, this.point)
+        return new Block3x3(table, {...this.point})
     }
     rotateOn(board: Board): Block | void {
         let block = this.rotate()
@@ -212,44 +211,29 @@ class Block3x3 extends Block {
 
 class Block2x2 extends Block {
     rotate(): Block {
-        return this
+        return this.clone()
     }
     rotateOn(board: Board): Block | void {
-        return this
+        return this.clone()
     }
 }
 
-enum RotType {
-    Vertical  = ".1..\n.1..\n.X..\n.1..",
-    Horizon   = "....\n....\n1X11\n....",
-}
-
+// TODO リファクタリング
 class Block4x4 extends Block {
-    private rType: RotType
-    constructor(table: Table, point: Point, rType: RotType) {
-        super(table, point)
-        this.rType = rType
-    }
-    movePoint(fn: (fn: Point) => Point): Block {
-        return new Block4x4(this.table, fn(this.point), this.rType)
-    }
+    private readonly rotationMatrix = [
+        {from: {y: 0, x:1}, to: {y: 2, x: 3}},
+        {from: {y: 1, x:1}, to: {y: 2, x: 2}},
+        {from: {y: 3, x:1}, to: {y: 2, x: 0}},
+    ]
     get center(): Point {
         return ({x: this.point.x + 1, y: this.point.y + 1} as Point)
     }
     rotate(): Block4x4 {
         let table = this.tableClone()
-        let nextType: RotType
-        switch (this.rType) {
-            case RotType.Vertical: {
-                nextType = RotType.Horizon
-                break
-            }
-            case RotType.Horizon: {
-                nextType = RotType.Vertical
-                break
-            }
+        for (const {from: {y: y, x:x}, to: {y: newY, x: newX}} of this.rotationMatrix) {
+            [table[y][x], table[newY][newX]] = [table[newY][newX], table[y][x]]
         }
-        return new Block4x4(strToTable(nextType as string), this.point, nextType)
+        return new Block4x4(table, {...this.point})
     }
     rotateOn(board: Board): Block | void {
         let block = this.rotate()
@@ -275,13 +259,13 @@ class Block4x4 extends Block {
 }
 
 const Blocks = [
-    {ctor: Block3x3, text: ".1.\n1X1\n..."},  // T
-    {ctor: Block3x3, text: "...\n1X.\n.11"},  // Z
-    {ctor: Block3x3, text: "...\n.X1\n11."},  // Z_t
-    {ctor: Block3x3, text: ".1.\n.X.\n.11"},  // L
-    {ctor: Block3x3, text: ".1.\n.X.\n11."},  // L_t
-    {ctor: Block2x2, text: "11\n11"},         // O
-    {ctor: Block4x4, text: RotType.Vertical as string, rType: RotType.Vertical}, // I
+    // {ctor: Block3x3, text: ".1.\n1X1\n..."},  // T
+    // {ctor: Block3x3, text: "...\n1X.\n.11"},  // Z
+    // {ctor: Block3x3, text: "...\n.X1\n11."},  // Z_t
+    // {ctor: Block3x3, text: ".1.\n.X.\n.11"},  // L
+    // {ctor: Block3x3, text: ".1.\n.X.\n11."},  // L_t
+    // {ctor: Block2x2, text: "11\n11"},         // O
+    {ctor: Block4x4, text: ".1..\n.1..\n.X..\n.1.."}, // I
 ]
 
 enum GameState {
