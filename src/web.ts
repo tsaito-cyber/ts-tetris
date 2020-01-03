@@ -26,8 +26,8 @@ Vue.component('game-component', {
             if (cmd != null) {
                 this.tetris.next(cmd)
                 for (const {point: {y: y, x: x}, value: value} of this.tetris.board.iterator()) {
-                    if (x <= 1 && x >= 11) { continue }
-                    this.items[(y - 2) * 10 + (x - 2)] = value
+                    if (x <= 1 || x >= 11) { continue }
+                    this.$set(this.items, (y - 2) * 10 + (x - 2), value)
                 }
                 this.score += 100;
             }
