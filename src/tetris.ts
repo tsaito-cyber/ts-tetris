@@ -27,8 +27,8 @@ export class Tetris {
     get score() {
         return this._score
     }
-    constructor() {
-        this._board = Board.create()
+    constructor(rows: number) {
+        this._board = Board.create(rows)
         this._score = 0
         this.state = GameState.Moving
         this.genBlock = Block.generate(8, 0)

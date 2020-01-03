@@ -47,15 +47,19 @@ export namespace MoveBlock {
         switch(str) {
             case 'd':
             case 'down':
+            case "ArrowDown":
                 return MoveBlock.Down
             case 'r':
             case 'right':
+            case "ArrowRight":
                 return MoveBlock.Right
             case 'l':
             case 'left':
+            case "ArrowLeft":
                 return MoveBlock.Left
             case 'u':
             case 'up':
+            case "ArrowUp":
                 return MoveBlock.Rotate
             default:
                 return
