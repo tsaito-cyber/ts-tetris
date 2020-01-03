@@ -1,0 +1,50 @@
+div {
+  box-sizing: border-box;
+}
+
+.game-main {
+  display: flex;
+  flex-flow: row-reverse nowrap;
+  width: 450px;
+  margin: 50px auto 0;
+}
+
+.game-score {
+  margin-top: 20px;
+  > .game-score-title {
+    font-size: 0.8rem;
+  }
+  > p {
+    margin-top: 5px;
+    font-size: 1.1em;
+  }
+}
+
+.game-info {
+  background-color: #efefef;
+  flex: 0 1 auto;
+  width: 100%;
+  padding-left: 20px;
+}
+
+.game-board {
+  box-sizing: content-box;
+  width: 300px;
+  flex: 0 0 auto;
+  display: flex;
+  flex-flow: row wrap;
+  border: 1px solid #ccc;
+  > div {
+    &.is-active {
+      background-color: yellow;
+    }
+    width: 30px;
+    height: 30px;
+  }
+  > div:not(:nth-of-type(10n)) {
+    border-right: 1px solid #ccc;
+  }
+  > div:not(:nth-of-type(n + 191)) {
+    border-bottom: 1px solid #ccc;
+  }
+}
