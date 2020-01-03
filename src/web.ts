@@ -8,7 +8,7 @@ Vue.component('game-component', {
     data() {
         return {
             items: Array(200).fill(PointState.Empty),
-            clockdown: 1000,
+            clockdown: 500,
             tetris: new Tetris(24),
             score: 0,
         }
@@ -16,22 +16,41 @@ Vue.component('game-component', {
     template: '#game-component',
     created: function() {
         window.addEventListener("keydown", this.onKey);
+        this.clock()
     },
     beforeDestroy: function() {
         window.removeEventListener("keydown", this.onKey);
     },
+    computed: {
+        speed: function(): number {
+            return this.clockdown
+        }
+    },
     methods: {
+        clock: function() {
+            console.log(`clockdown: ${this.clockdown}`)
+            setTimeout(() => {
+                if (this.tetris.gameOver) { return }
+                this.next(MoveBlock.Down)
+                this.clock()
+            }, this.clockdown)
+        },
         onKey: function(event: KeyboardEvent) {
             const cmd = MoveBlock.fromString(event.code as string)
             if (cmd != null) {
-                this.tetris.next(cmd)
-                for (const {point: {y: y, x: x}, value: value} of this.tetris.board.iterator()) {
-                    if (x <= 1 || x >= 11) { continue }
-                    this.$set(this.items, (y - 2) * 10 + (x - 2), value)
-                }
-                this.score += 100;
+                this.next(cmd)
             }
         },
+        next: function(cmd: MoveBlock) {
+            this.tetris.next(cmd)
+            for (const {point: {y: y, x: x}, value: value} of this.tetris.board.iterator()) {
+                if (x < 2 || x > 11 || y < 2 || y > 21) { continue }
+                this.$set(this.items, (y - 2) * 10 + (x - 2), value)
+            }
+            this.score = this.tetris.score
+            console.log(this.tetris.board.text)
+
+        }
     }
 })
 

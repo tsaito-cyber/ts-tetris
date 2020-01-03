@@ -15,7 +15,7 @@ export class Board {
         return str.split("\n").map(row => this.toPointStates(row))
     }
     static create(rows: number = 16) {
-        const table = Array.from(new Array(rows), () => [...PointStateRow]) as Table
+        const table = Array.from(new Array(rows-2), () => [...PointStateRow]) as Table
         for (let i = 0; i < 2; i++) { table.push(this.toPointStates('**************')) }
         return new Board(table)
     }
