@@ -1,5 +1,6 @@
 ## Tetris written by Typescript
 
+
 ### Web UI
 ![Web UI](https://raw.githubusercontent.com/takuma-saito/tetris/489917b8cc0d4527bcf3f4e2834a053764be8344/movies/web.gif)
 
@@ -18,3 +19,9 @@ npm run play:web      # web
 ```
 
 Would You have any questions or requests, please feel free to ask me.
+
+### Technical details
+
+Typescript: 3.7.4
+Node: v13.5.0
+Vue.js: 2.6.11
