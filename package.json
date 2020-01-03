@@ -4,7 +4,7 @@
   "description": "",
   "main": "main.js",
   "scripts": {
-    "play": "tsc && node dist/app.js",
+    "play": "tsc --module commonjs && node dist/console.js",
     "build": "tsc",
     "start": "npm run build:live",
     "build:live": "nodemon --exec ./node_modules/.bin/ts-node -- ./src/app.ts"

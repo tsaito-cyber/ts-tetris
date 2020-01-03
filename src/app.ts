@@ -1,3 +1,2 @@
-import {GameConsole} from './console'
-
-(new GameConsole()).run()
+import {Console} from './console'
+(new Console()).run()

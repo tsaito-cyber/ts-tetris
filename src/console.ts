@@ -1,7 +1,7 @@
 import {Tetris} from './tetris'
 import {MoveBlock} from './block'
 
-export class GameConsole {
+export class Console {
     private readline = require('readline');
     private out = process.stdout
     private tetris: Tetris
@@ -67,3 +67,5 @@ export class GameConsole {
         this.out.write(' > ')
     }
 }
+
+(new Console()).run()
