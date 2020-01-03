@@ -1,2 +1,2 @@
-import {Console} from './console'
-(new Console()).run()
+import {Tetris} from './tetris'
+(<any>window).Tetris = Tetris

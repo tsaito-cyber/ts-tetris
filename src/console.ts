@@ -2,7 +2,7 @@ import {Tetris} from './tetris'
 import {MoveBlock} from './block'
 
 export class Console {
-    private readline = require('readline');
+    private readline = require('readline')
     private out = process.stdout
     private tetris: Tetris
     private clockdown: number
