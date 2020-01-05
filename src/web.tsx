@@ -23,11 +23,11 @@ export class GameWeb extends React.Component<GameWebProps, GameWebState> {
     }
   }
   componentDidMount() {
-    window.addEventListener("keydown", this.onKey)
+    window.addEventListener("keydown", this.onKey.bind(this))
     this.clock()
   }
   componentWillUnmount() {
-    window.removeEventListener("keydown", this.onKey)
+    window.removeEventListener("keydown", this.onKey.bind(this))
   }
   clock() {
     console.log(`speed: ${this.state.speed}`)
@@ -71,9 +71,9 @@ export class GameWeb extends React.Component<GameWebProps, GameWebState> {
           </div>
         </div>
         <div className="game-board">
-          {this.state.points.map(val => {
-            const className = val === '.' ? 'is-active' : '' // FIXME
-            return <div className={className}></div>
+          {this.state.points.map((val, i) => {
+            const className = val !== '.' ? 'is-active' : '' // FIXME
+            return <div className={className} key={i}></div>
           })}
         </div>
       </div>

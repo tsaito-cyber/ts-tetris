@@ -46,7 +46,7 @@ export class Tetris {
                 const score = this._board.countEliminatingRows()
                 if (score > 0) {
                     this.state = GameState.Eliminating
-                    this._score += score * 100
+                    this._score += score * 200
                 } else {
                     this.state = GameState.Creating
                 }
@@ -78,7 +78,7 @@ export class Tetris {
         }
         if (this._board.canMove(this.block, move)) {
             this.block = this.block.movePoint(move)
-            if (cmd === MoveBlock.Down) { this._score += 5 }
+            if (cmd === MoveBlock.Down) { this._score += 1 }
         } else if (cmd === MoveBlock.Down) {
             this._board = this._board.merge(this.block, PointState.FixedBlock)
             this.state = GameState.Stopping

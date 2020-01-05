@@ -4,6 +4,6 @@ import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 window.document.addEventListener('DOMContentLoaded', (event) => {
   const game = <GameWeb />;
-  ReactDOM.render(game, document.getElementById('root'));
+  ReactDOM.render(game, window.document.getElementById('app'));
   window.game = window.game || game;
 })

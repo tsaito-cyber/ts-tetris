@@ -1,5 +1,5 @@
 module.exports = {
-  mode: "production",
+  mode: "development", // FIXME
   devtool: "inline-source-map",
   entry: "./src/app.tsx",
   output: {
@@ -7,10 +7,6 @@ module.exports = {
   },
   resolve: {
     extensions: [".ts", ".tsx", ".js"]
-  },
-  externals: {
-    react: 'React',
-    "react-dom": 'react-dom'
   },
   module: {
     rules: [
