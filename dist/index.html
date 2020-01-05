@@ -7,27 +7,7 @@
     <title>テトリスゲーム created by Typescript, awesome language!</title>
   </head>
   <body>
-    <script type="text/x-template" id="game-component">
-      <div class="game-main">
-        <div class="game-info">
-          <div class="game-score">
-            <h2 class="game-section-title">スコア</h2>
-            <p>{{score}}点</p>
-            <h2 class="game-section-title">速度</h2>
-            <p>{{speed}} マイクロ秒</p>
-          </div>
-        </div>
-        <div class="game-board">
-          <div v-for="(val, index) of items"
-               v-bind:key="index"
-               v-bind:class="val !== '.' ? 'is-active' : ''">
-          </div>
-        </div>
-      </div>
-    </script>
-    <div id="app">
-      <game-component></game-component>
-    </div>
+    <div id="app"></div>
     </div>
   </body>
 </html>

@@ -1,5 +1,5 @@
 declare global {
-    interface Window { vm: any; }
+    interface Window { game: any; }
 }
 declare var window: Window
 export default window

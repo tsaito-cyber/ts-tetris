@@ -1,18 +1,21 @@
 module.exports = {
   mode: "production",
   devtool: "inline-source-map",
-  entry: "./src/app.ts",
+  entry: "./src/app.tsx",
   output: {
     filename: "bundle.js"
   },
   resolve: {
     extensions: [".ts", ".tsx", ".js"]
   },
-  externals: { vue: 'Vue' },
+  externals: {
+    react: 'React',
+    "react-dom": 'react-dom'
+  },
   module: {
     rules: [
       {
-        test: /\.ts$/,
+        test: /\.tsx?$/,
         loader: "ts-loader"
       }
     ]
