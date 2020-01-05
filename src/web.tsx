@@ -7,16 +7,13 @@ import * as React from 'react'
 interface GameWebProps { }
 interface GameWebState {
   tetris: Tetris,
-  points: PointState[],
   score: number,
   speed: number,
 }
-
 export class GameWeb extends React.Component<GameWebProps, GameWebState> {
   constructor(props: GameWebProps) {
     super(props)
     this.state = {
-      points: Array(200).fill(PointState.Empty),
       speed: 500,
       tetris: new Tetris(24),
       score: 0,
@@ -45,19 +42,19 @@ export class GameWeb extends React.Component<GameWebProps, GameWebState> {
   }
   next(cmd: MoveBlock) {
     this.state.tetris.next(cmd)
+    this.setState((state, props) => (
+      { score: state.tetris.score }
+    ))
+    console.log(this.state.tetris.board.text)
+  }
+  // TODO
+  get points(): PointState[] {
     const newPoints: PointState[] = []
     for (const { point: { y: y, x: x }, value: value } of this.state.tetris.board.iterator()) {
       if (x < 2 || x > 11 || y < 2 || y > 21) { continue }
       newPoints[(y - 2) * 10 + (x - 2)] = value
     }
-    this.setState({
-      score: this.state.tetris.score,
-      points: newPoints
-    })
-    console.log(this.state.tetris.board.text)
-  }
-  getPoints() {
-    return Array.from({ length: 200 }, _ => Math.floor(Math.random() * 3))
+    return newPoints
   }
   render() {
     return (
@@ -71,7 +68,7 @@ export class GameWeb extends React.Component<GameWebProps, GameWebState> {
           </div>
         </div>
         <div className="game-board">
-          {this.state.points.map((val, i) => {
+          {this.points.map((val, i) => {
             const className = val !== '.' ? 'is-active' : '' // FIXME
             return <div className={className} key={i}></div>
           })}
