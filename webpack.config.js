@@ -1,18 +1,17 @@
 module.exports = {
-  mode: "production",
+  mode: "development", // FIXME
   devtool: "inline-source-map",
-  entry: "./src/app.ts",
+  entry: "./src/app.tsx",
   output: {
     filename: "bundle.js"
   },
   resolve: {
     extensions: [".ts", ".tsx", ".js"]
   },
-  externals: { vue: 'Vue' },
   module: {
     rules: [
       {
-        test: /\.ts$/,
+        test: /\.tsx?$/,
         loader: "ts-loader"
       }
     ]
