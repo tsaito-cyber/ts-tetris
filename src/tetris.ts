@@ -78,7 +78,7 @@ export class Tetris {
             this.block = this.block.movePoint(move)
             if (cmd === MoveBlock.Down) { this._score += 1 }
         } else if (cmd === MoveBlock.Down) {
-            this._board = this._board.merge(this.block, PointState.fixedBlock())
+            this._board = this._board.merge(this.block, PointState.fixedBlock(this.block.color))
             this.state = GameState.Stopping
             this.next()
         }

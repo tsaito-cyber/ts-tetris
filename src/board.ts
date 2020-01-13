@@ -1,4 +1,4 @@
-import {Point, PointState, Move} from './point'
+import {Point, PointState, Move, PointColor} from './point'
 
 export type Table = Array<Array<PointState>>
 
@@ -8,11 +8,11 @@ export class Board {
     constructor(table: Table) {
         this.table = table
     }
-    static toPointStates(str: string): Array<PointState> {
-        return [...str].map(char => PointState.fromChar(char))
+    static toPointStates(str: string, color: PointColor = PointColor.None): Array<PointState> {
+        return [...str].map(char => PointState.fromChar(char, color))
     }
-    static toTable(str: string): Table {
-        return str.split("\n").map(row => this.toPointStates(row))
+    static toTable(str: string, color: PointColor = PointColor.None): Table {
+        return str.split("\n").map(row => this.toPointStates(row, color))
     }
     static create(rows: number = 16) {
         const table = Array.from(new Array(rows-2), () => [...PointStateRow]) as Table

@@ -68,7 +68,7 @@ export namespace MoveBlock {
 
 export abstract class Block extends Board {
     public readonly point: Point
-    protected readonly color: PointColor
+    public readonly color: PointColor
     constructor(table: Table, point: Point, color: PointColor) {
         super(table)
         this.point = point
@@ -119,13 +119,13 @@ export abstract class Block extends Board {
         return this
     }
     static generate(xRange: number = 8, yRange: number = 22): () => Block {
-        function randBlocks(): Block {
+        function randBlock(): Block {
             const block = Blocks[Math.floor(Math.random() * Blocks.length)]
-            let args = [Board.toTable(block.text), {x: 2, y:0}, block.color] as any[]
+            let args = [Board.toTable(block.text, block.color), {x: 2, y:0}] as any[]
             return create(block.ctor, args)
         }
         return () => {
-            const block = randBlocks()
+            const block = randBlock()
             return block.adjustPoint()
         }
     }
