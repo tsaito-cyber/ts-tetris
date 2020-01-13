@@ -18,6 +18,37 @@ export enum PointColor {
     None      = 8,
 }
 
+export namespace PointColor {
+    export function toAnsi(color: PointColor): string {
+        switch(color) {
+            case PointColor.LightBlue: {
+                return '\u001b[36m'
+            }
+            case PointColor.Yellow: {
+                return '\u001b[33m'
+            }
+            case PointColor.Purple: {
+                return '\u001b[35m'
+            }
+            case PointColor.Blue: {
+                return '\u001b[34m'
+            }
+            case PointColor.Orange: {
+                return '\u001b[31m'
+            }
+            case PointColor.Green: {
+                return '\u001b[32m'
+            }
+            case PointColor.Red: {
+                return '\u001b[31m'
+            }
+            case PointColor.None: {
+                return '\u001b[37m'
+            }
+        }
+    }
+}
+
 export class PointState {
     public readonly kind: PointKind
     public readonly color: PointColor

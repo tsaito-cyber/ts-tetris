@@ -1,5 +1,6 @@
 import {Tetris} from './tetris'
 import {MoveBlock} from './block'
+import {PointColor} from './point'
 
 export class ConsoleGame {
     private readline = require('readline')
@@ -30,22 +31,27 @@ export class ConsoleGame {
         }, this.clockdown)
     }
     debugRun() {
-        console.log(this.tetris.board.text)
+        this.show()
         this.out.write(' > ')
         this.rl.on('line', (line: string) => {
             const cmd = MoveBlock.fromString(line)
             if (cmd != null) { this.tetris.next(cmd) }
             if (this.tetris.gameOver) { process.exit(0) }
-            console.log(this.tetris.board.text)
+            this.show()
             this.out.write(' > ')
         })
+    }
+    show() {
+        const text = this.tetris.board.table.map(
+            row => row.map(r => `${PointColor.toAnsi(r.color)}${r.char}\u001b[0m`).join('')).join('\n')
+        console.log(text)
     }
     run() {
         if (this.debug) {
             this.debugRun()
             return
         }
-        console.log(this.tetris.board.text)
+        this.show()
         process.stdin.on('keypress', (c: string, key: any) => {
             const cmd = MoveBlock.fromString(key.name as string)
             if (cmd != null) { this.tetris.next(cmd) }
@@ -62,7 +68,7 @@ export class ConsoleGame {
     screen(text: string) {
         this.out.write("\u001B[2J\u001B[0;0f")
         this.out.write("")
-        console.log(this.tetris.board.text)
+        this.show()
         console.log(text)
         this.out.write(' > ')
     }

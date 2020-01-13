@@ -1,4 +1,4 @@
-import {Point, PointState, Move, PointColor} from './point'
+import {Point, PointState, PointKind, Move, PointColor} from './point'
 
 export type Table = Array<Array<PointState>>
 
@@ -39,12 +39,12 @@ export class Board {
             }
         }
     }
-    merge(other: Board, pointState?: PointState): Board {
+    merge(other: Board, kind?: PointKind): Board {
         if (!this.isPuttable(other)) { return this }
         const table = this.tableClone()
         for (const {point: {y: y, x: x}, value: value} of other.iterator()) {
             if (table.length > y && table[y].length > x && value.notEmpty()) {
-                table[y][x] = pointState || value
+                table[y][x] = kind !== undefined ? PointState.makePointState(kind, value.color) : value
             }
         }
         return new Board(table)

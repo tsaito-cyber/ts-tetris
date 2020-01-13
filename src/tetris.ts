@@ -1,4 +1,4 @@
-import {PointState} from './point'
+import {PointKind} from './point'
 import {Board} from './board'
 import {Block, MoveBlock} from './block'
 
@@ -78,7 +78,7 @@ export class Tetris {
             this.block = this.block.movePoint(move)
             if (cmd === MoveBlock.Down) { this._score += 1 }
         } else if (cmd === MoveBlock.Down) {
-            this._board = this._board.merge(this.block, PointState.fixedBlock(this.block.color))
+            this._board = this._board.merge(this.block, PointKind.FixedBlock)
             this.state = GameState.Stopping
             this.next()
         }

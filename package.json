@@ -8,6 +8,7 @@
     "play:console": "tsc --module commonjs && node dist/console.js",
     "play:web": "npm run deploy && cd ./dist/ && http-server -o ./",
     "build:ts": "tsc",
+    "watch:ts": "tsc -w",
     "build:webpack": "webpack",
     "build:style": "node-sass src/style.scss dist/style.css",
     "webpack": "webpack --watch",
