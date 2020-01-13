@@ -10,8 +10,8 @@
     "build:ts": "tsc",
     "watch:ts": "tsc -w",
     "build:webpack": "webpack",
+    "watch:webpack": "webpack --watch",
     "build:style": "node-sass src/style.scss dist/style.css",
-    "webpack": "webpack --watch",
     "build:live": "nodemon --exec ./node_modules/.bin/ts-node -- ./src/app.ts"
   },
   "author": "",

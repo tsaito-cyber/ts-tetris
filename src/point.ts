@@ -47,6 +47,62 @@ export namespace PointColor {
             }
         }
     }
+    export function toCode(color: PointColor): string {
+        switch(color) {
+            case PointColor.LightBlue: {
+                return '#add8e6'
+            }
+            case PointColor.Yellow: {
+                return '#ffff00'
+            }
+            case PointColor.Purple: {
+                return '#800080'
+            }
+            case PointColor.Blue: {
+                return '#0000ff'
+            }
+            case PointColor.Orange: {
+                return '#ffa500'
+            }
+            case PointColor.Green: {
+                return '#98fb98'
+            }
+            case PointColor.Red: {
+                return '#ff4500'
+            }
+            case PointColor.None: {
+                return '#ffffff'
+            }
+        }
+    }
+    export function toName(color: PointColor): string {
+        switch(color) {
+            case PointColor.LightBlue: {
+                return 'lightblue'
+            }
+            case PointColor.Yellow: {
+                return 'yellow'
+            }
+            case PointColor.Purple: {
+                return 'purple'
+            }
+            case PointColor.Blue: {
+                return 'blue'
+            }
+            case PointColor.Orange: {
+                return 'orange'
+            }
+            case PointColor.Green: {
+                return 'green'
+            }
+            case PointColor.Red: {
+                return 'red'
+            }
+            case PointColor.None: {
+                return 'white'
+            }
+        }
+    }
 }
 
 export class PointState {

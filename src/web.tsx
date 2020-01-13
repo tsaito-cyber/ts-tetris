@@ -1,6 +1,6 @@
 import { Tetris } from './tetris'
 import { MoveBlock } from './block'
-import { PointState } from './point'
+import { PointState, PointColor } from './point'
 import window from './window'
 import * as React from 'react'
 
@@ -70,7 +70,8 @@ export class GameWeb extends React.Component<GameWebProps, GameWebState> {
         <div className="game-board">
           {this.points.map((val, i) => {
             const className = val.notEmpty() ? 'is-active' : '' // FIXME
-            return <div className={className} key={i}></div>
+            const color = PointColor.toName(val.color)
+            return <div className={className} key={i} data-background-color={color}></div>
           })}
         </div>
       </div>

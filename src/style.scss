@@ -27,6 +27,12 @@ div {
   padding-left: 20px;
 }
 
+@mixin data-bg($color) {
+  &[data-background-color='#{$color}'] {
+    background-color: $color;
+  }
+}
+
 .game-board {
   box-sizing: content-box;
   width: 300px;
@@ -35,9 +41,14 @@ div {
   flex-flow: row wrap;
   border: 1px solid #ccc;
   > div {
-    &.is-active {
-      background-color: yellow;
-    }
+    @include data-bg(lightblue)
+    @include data-bg(yellow)
+    @include data-bg(purple)
+    @include data-bg(orange)
+    @include data-bg(blue)
+    @include data-bg(green)
+    @include data-bg(red)
+    @include data-bg(white)
     width: 30px;
     height: 30px;
   }
