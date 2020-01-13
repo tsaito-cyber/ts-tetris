@@ -69,7 +69,7 @@ export class GameWeb extends React.Component<GameWebProps, GameWebState> {
         </div>
         <div className="game-board">
           {this.points.map((val, i) => {
-            const className = val !== '.' ? 'is-active' : '' // FIXME
+            const className = val.notEmpty() ? 'is-active' : '' // FIXME
             return <div className={className} key={i}></div>
           })}
         </div>

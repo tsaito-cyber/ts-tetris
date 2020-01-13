@@ -9,7 +9,7 @@ export class Board {
         this.table = table
     }
     static toPointStates(str: string): Array<PointState> {
-        return [...str].map(char => char as PointState)
+        return [...str].map(char => PointState.fromChar(char))
     }
     static toTable(str: string): Table {
         return str.split("\n").map(row => this.toPointStates(row))
@@ -20,14 +20,14 @@ export class Board {
         return new Board(table)
     }
     get text(): string {
-        return this.table.map(row => row.map(r => r as string).join('')).join("\n")
+        return this.table.map(row => row.map(r => r.char).join('')).join("\n")
     }
     unPuttablePoints(other: Board): Point[] {
         let points: Point[] = []
         for (const {point: {y: y, x: x}, value: value} of Array.from(other.iterator())) {
             if (y >= this.table.length) { continue }
             if (x >= this.table[y].length) { continue }
-            if (value === PointState.Empty || this.table[y][x] === PointState.Empty) { continue }
+            if (value.isEmpty() || this.table[y][x].isEmpty()) { continue }
             points.push({y: y, x: x})
         }
         return points
@@ -43,7 +43,7 @@ export class Board {
         if (!this.isPuttable(other)) { return this }
         const table = this.tableClone()
         for (const {point: {y: y, x: x}, value: value} of other.iterator()) {
-            if (table.length > y && table[y].length > x && value !== PointState.Empty) {
+            if (table.length > y && table[y].length > x && value.notEmpty()) {
                 table[y][x] = pointState || value
             }
         }
@@ -53,7 +53,7 @@ export class Board {
         for (const {point: {y: y, x: x}, value: value} of other.iterator()) {
             if (y >= this.table.length) { return false }
             if (x >= this.table[y].length) { return false }
-            if (value === PointState.Empty || this.table[y][x] === PointState.Empty) { continue }
+            if (value.isEmpty() || this.table[y][x].isEmpty()) { continue }
             return false
         }
         return true
@@ -62,12 +62,12 @@ export class Board {
         return Array.from(other.iterator())
             .every(({point: point, value: value}) => {
                 const p = move(point as Point)
-                return value === PointState.Empty || (this.table[p.y][p.x] === PointState.Empty)
+                return value.isEmpty() || (this.table[p.y][p.x].isEmpty())
             })
     }
     getEliminatingRows(): Array<number> {
         return Array.from(this.table.entries()).map(([i, row]) => {
-            return row.slice(2, this.numColumn + 2).every(r => r === PointState.FixedBlock) ? i : null
+            return row.slice(2, this.numColumn + 2).every(r => r.isFixed()) ? i : null
         }) as Array<number>
     }
     countEliminatingRows(): number {
