@@ -1,4 +1,4 @@
-import {PointState} from './point'
+import {PointKind} from './point'
 import {Board} from './board'
 import {Block, MoveBlock} from './block'
 
@@ -17,7 +17,6 @@ export class Tetris {
     private _score: number
     public block: Block
     private genBlock: () => Block
-    private calling: boolean
     get board() {
         return this._board.merge(this.block)
     }
@@ -33,7 +32,6 @@ export class Tetris {
         this.state = GameState.Moving
         this.genBlock = Block.generate(8, 0)
         this.block = this.genBlock()
-        this.calling = false
     }
     next(cmd?: MoveBlock) {
         console.log(`cmd: ${cmd}`)
@@ -80,7 +78,7 @@ export class Tetris {
             this.block = this.block.movePoint(move)
             if (cmd === MoveBlock.Down) { this._score += 1 }
         } else if (cmd === MoveBlock.Down) {
-            this._board = this._board.merge(this.block, PointState.FixedBlock)
+            this._board = this._board.merge(this.block, PointKind.FixedBlock)
             this.state = GameState.Stopping
             this.next()
         }

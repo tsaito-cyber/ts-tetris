@@ -8,9 +8,10 @@
     "play:console": "tsc --module commonjs && node dist/console.js",
     "play:web": "npm run deploy && cd ./dist/ && http-server -o ./",
     "build:ts": "tsc",
+    "watch:ts": "tsc -w",
     "build:webpack": "webpack",
+    "watch:webpack": "webpack --watch",
     "build:style": "node-sass src/style.scss dist/style.css",
-    "webpack": "webpack --watch",
     "build:live": "nodemon --exec ./node_modules/.bin/ts-node -- ./src/app.ts"
   },
   "author": "",

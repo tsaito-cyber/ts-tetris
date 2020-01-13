@@ -1,4 +1,4 @@
-import {Point, PointState, Move} from './point'
+import {Point, PointColor, Move} from './point'
 import {Board, Table} from './board'
 
 function create<T>(ctor: {new(...args: any[]): T}, args: any) {
@@ -21,7 +21,6 @@ interface Box {
     height: number,
     width: number,
 }
-
 
 export enum MoveBlock {
     Rotate = 1,
@@ -69,9 +68,11 @@ export namespace MoveBlock {
 
 export abstract class Block extends Board {
     public readonly point: Point
-    constructor(table: Table, point: Point) {
+    public readonly color: PointColor
+    constructor(table: Table, point: Point, color: PointColor) {
         super(table)
         this.point = point
+        this.color = color
     }
     *iterator() {
         for(const {point: {y: y, x: x}, value: value} of super.iterator()) {
@@ -92,7 +93,7 @@ export abstract class Block extends Board {
         const len = this.table.length
         for (let i = 0; i < len; i++) {
             for (let j = 0; j < len; j++) {
-                if (this.table[i][j] !== PointState.Empty) {
+                if (this.table[i][j].notEmpty()) {
                     height = i > height ? i : height
                     width  = j > width  ? j : width
                     if (x < 0 || x > j) { x = j }
@@ -118,13 +119,13 @@ export abstract class Block extends Board {
         return this
     }
     static generate(xRange: number = 8, yRange: number = 22): () => Block {
-        function randBlocks(): Block {
+        function randBlock(): Block {
             const block = Blocks[Math.floor(Math.random() * Blocks.length)]
-            let args = [Board.toTable(block.text), {x: 2, y:0}] as any[]
+            let args = [Board.toTable(block.text, block.color), {x: 2, y:0}] as any[]
             return create(block.ctor, args)
         }
         return () => {
-            const block = randBlocks()
+            const block = randBlock()
             return block.adjustPoint()
         }
     }
@@ -154,7 +155,7 @@ class Block3x3 extends Block {
         for (const {from: [x, y], to: [newX, newY]} of this.rotationMatrix) {
             table[newX][newY] = this.table[x][y]
         }
-        return new Block3x3(table, {...this.point})
+        return new Block3x3(table, {...this.point}, this.color)
     }
     rotateOn(board: Board): Block | void {
         let block = this.rotate()
@@ -206,17 +207,17 @@ class Block4x4 extends Block {
         return 4
     }
     get isHorizonal(): boolean {
-        return this.table[2][3] === PointState.UnboundedBlock
+        return this.table[2][3].isUnbounded()
     }
     get isVertical(): boolean {
-        return this.table[0][1] === PointState.UnboundedBlock
+        return this.table[0][1].isUnbounded()
     }
     rotate(): Block4x4 {
         let table = this.tableClone()
         for (const {from: {y: y, x:x}, to: {y: newY, x: newX}} of this.rotationMatrix) {
             [table[y][x], table[newY][newX]] = [table[newY][newX], table[y][x]]
         }
-        return new Block4x4(table, {...this.point})
+        return new Block4x4(table, {...this.point}, this.color)
     }
     rotateOn(board: Board): Block | void {
         let block = this.rotate()
@@ -255,19 +256,11 @@ class Block4x4 extends Block {
 }
 
 const Blocks = [
-    {ctor: Block3x3, text: ".1.\n1X1\n..."},  // T
-    {ctor: Block3x3, text: "...\n1X.\n.11"},  // Z
-    {ctor: Block3x3, text: ".1.\n1X.\n1.."},  // Z'
-    {ctor: Block3x3, text: "...\n.X1\n11."},  // Z_t
-    {ctor: Block3x3, text: ".1.\n.X1\n..1"},  // Z_t'
-    {ctor: Block3x3, text: ".1.\n.X.\n.11"},  // L
-    {ctor: Block3x3, text: "...\n1X1\n1.."},  // L'
-    {ctor: Block3x3, text: "11.\n.X.\n.1."},  // L''
-    {ctor: Block3x3, text: "..1\n1X1\n..."},  // L'''
-    {ctor: Block3x3, text: ".1.\n.X.\n11."},  // L_t
-    {ctor: Block3x3, text: "1..\n1X1\n..."},  // L_t'
-    {ctor: Block3x3, text: ".11\n.X.\n.1."},  // L_t''
-    {ctor: Block3x3, text: "...\n1X1\n..1"},  // L_t'''
-    {ctor: Block2x2, text: "11\n11"},         // O
-    {ctor: Block4x4, text: ".1..\n.1..\n.X..\n.1.."}, // I
+    {ctor: Block3x3, text: ".1.\n1X1\n...", color: PointColor.Purple},   // T
+    {ctor: Block3x3, text: "...\n1X.\n.11", color: PointColor.Red},      // Z
+    {ctor: Block3x3, text: "...\n.X1\n11.", color: PointColor.Green},    // Z_t
+    {ctor: Block3x3, text: ".1.\n.X.\n.11", color: PointColor.Orange},   // L
+    {ctor: Block3x3, text: ".1.\n.X.\n11.", color: PointColor.Blue},     // L_t
+    {ctor: Block2x2, text: "11\n11",        color: PointColor.Yellow},   // O
+    {ctor: Block4x4, text: "....\n....\n1X11\n....", color: PointColor.LightBlue}, // I
 ]
