@@ -80,3 +80,5 @@ stopping --> creating: 何もしない
 creating --> ending: ブロックが作成時に衝突している
 ending --> [*]: game over
 ```
+
+![状態遷移図.png](状態遷移図.png)
