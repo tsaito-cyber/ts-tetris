@@ -54,3 +54,29 @@ npm run play:web      # web
 - `０`：固定化されているブロック
 - `１`：動かしているブロック
 
+
+## 盤面の状態
+盤面のステートマシンを作る
+
+- moving
+    - ブロックを移動できる
+- creating
+    - 新しいブロックを作る
+- stopping
+    - ブロックを止める
+- eliminating
+    - ブロックを消去する
+- ending
+    - ブロックが上段まで詰まる
+
+```{plantuml}
+[*] --> creating: 開始
+creating --> moving: ブロックを新規作成する
+moving --> moving: ブロックを動かす or 回転する
+moving --> stopping: ブロックが動かせない
+stopping --> eliminating: ブロックが揃っている
+eliminating --> creating: ブロックを消す
+stopping --> creating: 何もしない
+creating --> ending: ブロックが作成時に衝突している
+ending --> [*]: game over
+```
